@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using System.Linq; 
+using System.Linq;
 
 public class ServerManager : MonoBehaviour
 {
@@ -10,7 +10,7 @@ public class ServerManager : MonoBehaviour
     [SerializeField] private float botSpeed = 5f;
 
     [Header("Network Simulation")]
-    [Tooltip("Số lần update mỗi giây (Hz). Ví dụ 20 nghĩa là 0.05s gửi 1 lần.")]
+    [Tooltip("Số lần update mỗi giây (Hz).")]
     [SerializeField] private int tickRate = 20;
 
     [Header("References")]
@@ -56,17 +56,20 @@ public class ServerManager : MonoBehaviour
 
         foreach (var bot in bots)
         {
-            bot.UpdateLogic(Time.deltaTime);
-            bot.Move(botSpeed, Time.deltaTime);
+            // [THAY ĐỔI QUAN TRỌNG]
+            // Thay thế bot.UpdateLogic() và bot.Move() bằng bot.Tick()
+            bot.Tick(botSpeed, Time.deltaTime);
 
             CheckEggCollection(bot);
 
+            // Kiểm tra IsMoving (Đã được định nghĩa trong BotEntity mới)
             if (!bot.IsMoving)
             {
                 AssignNearestEggAsTarget(bot);
             }
         }
 
+        // Logic sinh trứng ngẫu nhiên khi số lượng ít
         if (eggs.Count < eggCount / 2)
         {
             Vector2Int pos = GetRandomWalkablePosition();
@@ -74,11 +77,10 @@ public class ServerManager : MonoBehaviour
         }
     }
 
-
     public List<BotSnapshot> GetLatestSnapshots()
     {
         List<BotSnapshot> snapshots = new List<BotSnapshot>();
-        float serverTime = Time.time; 
+        float serverTime = Time.time;
 
         foreach (var bot in bots)
         {
@@ -92,7 +94,6 @@ public class ServerManager : MonoBehaviour
         }
         return snapshots;
     }
-
 
     private void SpawnEggs()
     {
@@ -109,7 +110,7 @@ public class ServerManager : MonoBehaviour
         {
             Vector2Int startPos;
             bool isOverlapping;
-            int attempts = 0; 
+            int attempts = 0;
 
             do
             {
@@ -117,6 +118,7 @@ public class ServerManager : MonoBehaviour
                 isOverlapping = false;
                 attempts++;
 
+                // Check trùng vị trí trứng
                 foreach (var egg in eggs)
                 {
                     if (egg.GridPosition == startPos)
@@ -126,6 +128,7 @@ public class ServerManager : MonoBehaviour
                     }
                 }
 
+                // Check trùng vị trí bot khác
                 if (!isOverlapping)
                 {
                     foreach (var b in bots)
@@ -138,12 +141,10 @@ public class ServerManager : MonoBehaviour
                     }
                 }
 
-            } while (isOverlapping && attempts < 50); 
+            } while (isOverlapping && attempts < 50);
 
             BotEntity newBot = new BotEntity(i, startPos);
-
             AssignNearestEggAsTarget(newBot);
-
             bots.Add(newBot);
         }
     }
@@ -155,11 +156,12 @@ public class ServerManager : MonoBehaviour
             if (eggs[i].GridPosition == bot.GridPosition)
             {
                 Vector2Int eatenEggPos = eggs[i].GridPosition;
-
                 eggs.RemoveAt(i);
 
+                // Bot ăn xong thì dừng lại
                 bot.SetPath(null);
 
+                // Các bot khác đang nhắm đến trứng này cũng phải dừng lại tính toán lại
                 foreach (var otherBot in bots)
                 {
                     if (otherBot == bot) continue;
@@ -167,7 +169,7 @@ public class ServerManager : MonoBehaviour
                     Vector2Int? dest = otherBot.GetFinalDestination();
                     if (dest.HasValue && dest.Value == eatenEggPos)
                     {
-                        otherBot.SetPath(null); 
+                        otherBot.SetPath(null);
                     }
                 }
                 break;
@@ -179,6 +181,7 @@ public class ServerManager : MonoBehaviour
     {
         if (eggs.Count == 0) return;
 
+        // Tìm trứng gần nhất
         var sortedEggs = eggs.OrderBy(e =>
             Mathf.Abs(bot.GridPosition.x - e.GridPosition.x) +
             Mathf.Abs(bot.GridPosition.y - e.GridPosition.y)
@@ -199,7 +202,7 @@ public class ServerManager : MonoBehaviour
     private Vector2Int GetRandomWalkablePosition()
     {
         int x, y;
-        int maxTries = 100; 
+        int maxTries = 100;
         do
         {
             x = Random.Range(0, gridManager.CurrentWidth);

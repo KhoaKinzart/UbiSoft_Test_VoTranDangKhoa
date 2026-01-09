@@ -606,7 +606,7 @@ GameObject:
   - component: {fileID: 1317744859}
   - component: {fileID: 1317744860}
   m_Layer: 0
-  m_Name: GridManager
+  m_Name: MapGenerator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -653,7 +653,7 @@ GameObject:
   - component: {fileID: 1419551606}
   - component: {fileID: 1419551607}
   m_Layer: 0
-  m_Name: GameController
+  m_Name: SceneController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -689,7 +689,7 @@ MonoBehaviour:
   gridManager: {fileID: 1317744860}
   cameraFollow: {fileID: 1024567125}
   playerPrefab: {fileID: 5518974939056578592, guid: d376551fff2d23943b6e233fa8891fd9, type: 3}
-  playerCount: 5
+  playerCount: 20
 --- !u!1 &1453481092
 GameObject:
   m_ObjectHideFlags: 0
@@ -732,7 +732,7 @@ GameObject:
   - component: {fileID: 1453533407}
   - component: {fileID: 1453533406}
   m_Layer: 0
-  m_Name: ServerManager
+  m_Name: GameSimulationLoop
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -750,7 +750,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8877bb981b6d0349b41a85a98c40562, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  botCount: 20
+  botCount: 2
   eggCount: 10
   botSpeed: 5
   tickRate: 20
@@ -812,7 +812,7 @@ GameObject:
   - component: {fileID: 1863260119}
   - component: {fileID: 1863260120}
   m_Layer: 0
-  m_Name: ClientManager
+  m_Name: WorldRenderer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

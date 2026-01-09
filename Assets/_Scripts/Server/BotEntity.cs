@@ -1,169 +1,74 @@
 ﻿using System.Collections.Generic;
-using UnityEngine; 
+using UnityEngine;
+using Server.Strategies; // Bắt buộc phải có dòng này để dùng DefaultBotMovement
 
 public class BotEntity
 {
- 
+    // --- DATA CƠ BẢN ---
     public int ID { get; private set; }
-    public Vector2 Position { get; set; }        
-    public Vector2Int GridPosition { get; set; } 
+    public Vector2 Position { get; set; }
+    public Vector2Int GridPosition { get; set; }
+    public List<Vector2Int> CurrentPath { get; private set; } = new List<Vector2Int>();
 
-  
-    private List<Vector2Int> currentPath;
-    public bool IsMoving => currentPath != null && currentPath.Count > 0;
+    // --- THUỘC TÍNH SỬA LỖI "IsMoving" ---
+    // Kiểm tra xem list path có phần tử nào không
+    public bool IsMoving => CurrentPath != null && CurrentPath.Count > 0;
 
-
+    // --- STAMINA DATA (Public để Strategy truy cập) ---
     public float CurrentStamina { get; private set; } = 100f;
     public float MaxStamina { get; private set; } = 100f;
-    public float StaminaRegenRate { get; private set; } = 10f; 
-    public float SprintCostPerSec { get; private set; } = 25f;  
-    public float DashCost { get; private set; } = 30f;         
+    public float StaminaRegenRate { get; private set; } = 10f;
 
+    // --- STATE DATA (Public để Strategy truy cập) ---
+    public bool IsSprinting { get; set; }
+    public bool IsDashing { get; set; }
+    public float DashCooldownTimer { get; set; }
+    public float DashDurationTimer { get; set; }
 
-    private float minStaminaToStartSprint = 15f;
-
-  
-    public bool IsSprinting { get; private set; }
-    public bool IsDashing { get; private set; } 
-
- 
-    private float dashCooldownTimer = 0f;
-    private float dashDurationTimer = 0f;
-    private const float DASH_COOLDOWN = 3.0f;
-    private const float DASH_DURATION = 0.4f; 
-
+    // --- STRATEGY PATTERN ---
+    private IBotMovement _movementStrategy;
 
     public BotEntity(int id, Vector2Int startPos)
     {
         this.ID = id;
         this.GridPosition = startPos;
         this.Position = startPos;
-        this.currentPath = new List<Vector2Int>();
+
+        // Khởi tạo chiến thuật di chuyển mặc định
+        this._movementStrategy = new DefaultBotMovement();
     }
 
     public void SetPath(List<Vector2Int> path)
     {
-        this.currentPath = path;
+        this.CurrentPath = path;
     }
 
-
-    public void UpdateLogic(float deltaTime)
+    // --- HÀM CHÍNH (Thay thế cho Move và UpdateLogic cũ) ---
+    // ServerManager sẽ gọi hàm này mỗi frame
+    public void Tick(float baseSpeed, float deltaTime)
     {
-
-        if (dashCooldownTimer > 0) dashCooldownTimer -= deltaTime;
-
-  
-        if (!IsSprinting && !IsDashing)
-        {
-            if (CurrentStamina < MaxStamina)
-            {
-                CurrentStamina += StaminaRegenRate * deltaTime;
-                if (CurrentStamina > MaxStamina) CurrentStamina = MaxStamina;
-            }
-        }
+        _movementStrategy.UpdateMovement(this, baseSpeed, deltaTime);
     }
 
-
-    public void Move(float baseSpeed, float deltaTime)
+    // --- HELPER METHODS ---
+    public void RegenerateStamina(float deltaTime)
     {
-  
-        if (currentPath == null || currentPath.Count == 0)
-        {
-            IsSprinting = false;
-            IsDashing = false;
-            return;
-        }
-
-        Vector2 targetPos = currentPath[0];
-        float distToNextNode = Vector2.Distance(Position, targetPos);
-
-     
-        float distToFinalDest = Vector2.Distance(Position, currentPath[currentPath.Count - 1]);
-
-        if (IsDashing)
-        {
-           
-            dashDurationTimer -= deltaTime;
-            if (dashDurationTimer <= 0)
-            {
-                IsDashing = false;
-            }
-        }
-        else
-        {
-   
-            if (dashCooldownTimer <= 0 &&
-                CurrentStamina >= DashCost &&
-                distToFinalDest > 4.0f)
-            {
-                PerformDash();
-            }
-        }
-
-
-        float currentSpeed = baseSpeed;
-        IsSprinting = false; 
-
-        if (IsDashing)
-        {
-       
-            currentSpeed = baseSpeed * 4.0f;
-
-        }
-        else
-        {
-
-            bool wantToSprint = distToFinalDest > 6.0f;
-            bool canSprint = CurrentStamina > (IsSprinting ? 0f : minStaminaToStartSprint);
-
-            if (wantToSprint && canSprint)
-            {
-                IsSprinting = true;
-                currentSpeed = baseSpeed * 1.8f; 
-
-              
-                CurrentStamina -= SprintCostPerSec * deltaTime;
-                if (CurrentStamina < 0) CurrentStamina = 0;
-            }
-        }
-
-     
-        Vector2 direction = (targetPos - Position).normalized;
-
-       
-        Position += direction * currentSpeed * deltaTime;
-
-   
-        if (distToNextNode < 0.1f) 
-        {
-            Position = targetPos;
-            GridPosition = new Vector2Int((int)Position.x, (int)Position.y);
-
-            currentPath.RemoveAt(0);
-        }
+        CurrentStamina += StaminaRegenRate * deltaTime;
+        if (CurrentStamina > MaxStamina) CurrentStamina = MaxStamina;
     }
 
-    private void PerformDash()
+    public void ConsumeStamina(float amount)
     {
-        IsDashing = true;
-        dashDurationTimer = DASH_DURATION;
-        dashCooldownTimer = DASH_COOLDOWN;
-        CurrentStamina -= DashCost;
+        CurrentStamina -= amount;
+        if (CurrentStamina < 0) CurrentStamina = 0;
     }
 
     public Vector2Int? GetFinalDestination()
-
     {
-
-        if (currentPath != null && currentPath.Count > 0)
-
+        if (CurrentPath != null && CurrentPath.Count > 0)
         {
-
-            return currentPath[currentPath.Count - 1]; 
-
+            return CurrentPath[CurrentPath.Count - 1];
         }
-
         return null;
-
     }
 }

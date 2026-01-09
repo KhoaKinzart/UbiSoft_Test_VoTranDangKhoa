@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using Client.Utils;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 public class ClientManager : MonoBehaviour
 {
@@ -10,35 +11,34 @@ public class ClientManager : MonoBehaviour
     [SerializeField] private GameObject eggPrefab;
 
     [Header("Network Settings")]
-    [Tooltip("Giả lập độ trễ mạng (Ping).")]
     [Range(0.05f, 5f)]
     [SerializeField] private float interpolationDelay = 0.1f;
 
-
+    // --- POOLING VARS (Giữ nguyên) ---
     private Queue<GameObject> botPool = new Queue<GameObject>();
     private Queue<GameObject> eggPool = new Queue<GameObject>();
-
-
     private Dictionary<int, GameObject> spawnedBots = new Dictionary<int, GameObject>();
     private Dictionary<int, GameObject> spawnedEggs = new Dictionary<int, GameObject>();
 
-
+    // --- DATA BUFFERS ---
     private Dictionary<int, List<BotSnapshot>> botHistoryBuffer = new Dictionary<int, List<BotSnapshot>>();
+    private List<EggListSnapshot> eggHistoryBuffer = new List<EggListSnapshot>();
 
     private struct EggListSnapshot
     {
         public float Timestamp;
         public HashSet<int> ActiveEggIDs;
     }
-    private List<EggListSnapshot> eggHistoryBuffer = new List<EggListSnapshot>();
 
     void Update()
     {
-
+        // 1. Nhận dữ liệu
         ReceiveServerData();
 
-        InterpolateBots();
+        // 2. Cập nhật vị trí Bots (Đã Refactor)
+        UpdateBotsVisuals();
 
+        // 3. Cập nhật Eggs (Giữ nguyên logic cũ)
         SyncEggsInterpolated();
     }
 
@@ -47,15 +47,14 @@ public class ClientManager : MonoBehaviour
         float serverTime = Time.time;
         float retentionTime = serverTime - interpolationDelay - 2.0f;
 
-
-        List<BotSnapshot> snapshots = serverManager.GetLatestSnapshots();
+        // Xử lý dữ liệu Bot
+        var snapshots = serverManager.GetLatestSnapshots();
         foreach (var snap in snapshots)
         {
             if (!botHistoryBuffer.ContainsKey(snap.BotID))
                 botHistoryBuffer[snap.BotID] = new List<BotSnapshot>();
 
             var history = botHistoryBuffer[snap.BotID];
-
 
             if (history.Count == 0 || snap.Timestamp > history[history.Count - 1].Timestamp)
                 history.Add(snap);
@@ -64,7 +63,7 @@ public class ClientManager : MonoBehaviour
                 history.RemoveAt(0);
         }
 
-    
+        // Xử lý dữ liệu Egg (Giữ nguyên)
         if (serverManager.Eggs != null)
         {
             EggListSnapshot eggSnap = new EggListSnapshot
@@ -81,7 +80,8 @@ public class ClientManager : MonoBehaviour
         }
     }
 
-    private void InterpolateBots()
+    // Hàm này đã được làm sạch nhờ InterpolationUtils
+    private void UpdateBotsVisuals()
     {
         float renderTime = Time.time - interpolationDelay;
 
@@ -90,79 +90,19 @@ public class ClientManager : MonoBehaviour
             int botId = kvp.Key;
             List<BotSnapshot> history = kvp.Value;
 
-           
             if (!spawnedBots.ContainsKey(botId))
             {
-                GameObject newBot = GetBotFromPool(botId);
-                spawnedBots.Add(botId, newBot);
-
-                if (history.Count > 0)
-                {
-                    newBot.transform.position = new Vector3(history[0].Position.x, 0f, history[0].Position.y);
-                }
+                spawnedBots[botId] = GetBotFromPool(botId);
             }
 
             GameObject botObj = spawnedBots[botId];
-
-     
             BotVisual visual = botObj.GetComponent<BotVisual>();
-  
 
-            if (history.Count == 0) continue;
-
-            BotSnapshot snapA = history[0];
-            BotSnapshot snapB = history[0];
-            bool foundA = false;
-            bool foundB = false;
-
-
-            for (int i = history.Count - 1; i >= 0; i--)
+            // GỌI UTILS Ở ĐÂY
+            if (InterpolationUtils.CalculateInterpolation(history, renderTime, out Vector2 newPos, out float newStamina))
             {
-                if (history[i].Timestamp <= renderTime)
-                {
-                    snapA = history[i];
-                    foundA = true;
-                    if (i + 1 < history.Count)
-                    {
-                        snapB = history[i + 1];
-                        foundB = true;
-                    }
-                    break;
-                }
-            }
-
-            if (foundA && foundB)
-            {
-         
-                if (Vector2.Distance(snapA.Position, snapB.Position) > 10.0f)
-                {
-                    botObj.transform.position = new Vector3(snapB.Position.x, 0f, snapB.Position.y);
-                }
-                else
-                {
-                    float timeWindow = snapB.Timestamp - snapA.Timestamp;
-                    if (timeWindow > 0.0001f)
-                    {
-                        float t = (renderTime - snapA.Timestamp) / timeWindow;
-                        Vector2 pos = Vector2.Lerp(snapA.Position, snapB.Position, t);
-                        botObj.transform.position = new Vector3(pos.x, 0f, pos.y);
-
-          
-                        if (visual != null)
-                        {
-                            float currentStamina = Mathf.Lerp(snapA.Stamina, snapB.Stamina, t);
-                            visual.SetStamina(currentStamina);
-                        }
-             
-                    }
-                }
-            }
-            else if (foundA)
-            {
-                botObj.transform.position = new Vector3(snapA.Position.x, 0f, snapA.Position.y);
-
-                if (visual != null) visual.SetStamina(snapA.Stamina);
-       
+                botObj.transform.position = new Vector3(newPos.x, 0f, newPos.y);
+                if (visual != null) visual.SetStamina(newStamina);
             }
         }
     }
