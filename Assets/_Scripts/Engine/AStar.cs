@@ -1,11 +1,15 @@
 ﻿using System.Collections.Generic;
-using UnityEngine; 
+using UnityEngine;
 
 public class AStar
 {
     private int width;
     private int height;
-    private Node[,] grid; 
+    private Node[,] grid;
+
+
+    private int currentSearchId = 0;
+
 
     private readonly int[] dx = { 0, 0, -1, 1 };
     private readonly int[] dy = { 1, -1, 0, 0 };
@@ -45,19 +49,23 @@ public class AStar
     {
         if (!IsValid(startPos) || !IsValid(targetPos)) return null;
 
+  
+        currentSearchId++;
+
+
         Node startNode = grid[startPos.x, startPos.y];
         Node targetNode = grid[targetPos.x, targetPos.y];
 
         if (!startNode.IsWalkable || !targetNode.IsWalkable) return null;
 
-
-        ResetAllNodes();
-
         PriorityQueue<Node> openSet = new PriorityQueue<Node>();
-        HashSet<Node> closedSet = new HashSet<Node>();
 
+
+        startNode.LastSearchId = currentSearchId;
         startNode.G = 0;
         startNode.H = GetHeuristic(startNode, targetNode);
+        startNode.Parent = null;
+
         openSet.Enqueue(startNode);
 
         while (openSet.Count > 0)
@@ -69,30 +77,35 @@ public class AStar
                 return RetracePath(startNode, targetNode);
             }
 
-            closedSet.Add(currentNode);
-
             foreach (Node neighbor in GetNeighbors(currentNode))
             {
-                if (!neighbor.IsWalkable || closedSet.Contains(neighbor)) continue;
+                if (!neighbor.IsWalkable) continue;
 
-                float newMovementCostToNeighbor = currentNode.G + 1; 
+         
+                if (neighbor.LastSearchId != currentSearchId)
+                {
+                    neighbor.G = float.MaxValue;
+                    neighbor.Parent = null;
+                    neighbor.LastSearchId = currentSearchId; 
+                }
 
-                if (newMovementCostToNeighbor < neighbor.G || !openSet.Contains(neighbor))
+
+                float newMovementCostToNeighbor = currentNode.G + 1;
+
+                if (newMovementCostToNeighbor < neighbor.G)
                 {
                     neighbor.G = newMovementCostToNeighbor;
                     neighbor.H = GetHeuristic(neighbor, targetNode);
                     neighbor.Parent = currentNode;
 
-                    if (!openSet.Contains(neighbor))
-                    {
-                        openSet.Enqueue(neighbor);
-                    }
+                    openSet.Enqueue(neighbor);
                 }
             }
         }
 
         return null;
     }
+
 
     private List<Vector2Int> RetracePath(Node startNode, Node endNode)
     {
@@ -134,16 +147,5 @@ public class AStar
     private bool IsValid(Vector2Int pos)
     {
         return pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height;
-    }
-
-    private void ResetAllNodes()
-    {
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                grid[x, y].Reset();
-            }
-        }
     }
 }
