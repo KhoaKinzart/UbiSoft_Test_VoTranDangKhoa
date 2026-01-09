@@ -1,20 +1,22 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System;
 
 public class GridManager : MonoBehaviour
 {
-    [SerializeField] private MapConfig config; 
+    [SerializeField] private MapConfig config;
     [SerializeField] private GameObject groundPrefab;
     [SerializeField] private GameObject obstaclePrefab;
 
     public int[,] GridData { get; private set; }
     public int CurrentWidth { get; private set; }
     public int CurrentHeight { get; private set; }
-    public Vector3 CenterPosition { get; private set; } 
+    public Vector3 CenterPosition { get; private set; }
+    public bool IsMapReady { get; private set; } = false;
 
     public IEnumerator GenerateMapRoutine(int playerCount, Action onComplete)
     {
+        IsMapReady = false;
         CalculateSize(playerCount);
 
         foreach (Transform child in transform) Destroy(child.gameObject);
@@ -25,7 +27,7 @@ public class GridManager : MonoBehaviour
 
         int centerX = CurrentWidth / 2;
         int centerZ = CurrentHeight / 2;
-        CenterPosition = new Vector3(centerX, 1f, centerZ); 
+        CenterPosition = new Vector3(centerX, 1f, centerZ);
 
         int cellsProcessed = 0;
         for (int x = 0; x < CurrentWidth; x++)
@@ -42,7 +44,7 @@ public class GridManager : MonoBehaviour
                 }
             }
         }
-
+        IsMapReady = true; 
         onComplete?.Invoke();
     }
 
