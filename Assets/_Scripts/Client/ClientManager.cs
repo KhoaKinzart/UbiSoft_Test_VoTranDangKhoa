@@ -14,13 +14,11 @@ public class ClientManager : MonoBehaviour
     [Range(0.05f, 5f)]
     [SerializeField] private float interpolationDelay = 0.1f;
 
-    // --- POOLING VARS (Giữ nguyên) ---
     private Queue<GameObject> botPool = new Queue<GameObject>();
     private Queue<GameObject> eggPool = new Queue<GameObject>();
     private Dictionary<int, GameObject> spawnedBots = new Dictionary<int, GameObject>();
     private Dictionary<int, GameObject> spawnedEggs = new Dictionary<int, GameObject>();
 
-    // --- DATA BUFFERS ---
     private Dictionary<int, List<BotSnapshot>> botHistoryBuffer = new Dictionary<int, List<BotSnapshot>>();
     private List<EggListSnapshot> eggHistoryBuffer = new List<EggListSnapshot>();
 
@@ -32,13 +30,10 @@ public class ClientManager : MonoBehaviour
 
     void Update()
     {
-        // 1. Nhận dữ liệu
         ReceiveServerData();
 
-        // 2. Cập nhật vị trí Bots (Đã Refactor)
         UpdateBotsVisuals();
 
-        // 3. Cập nhật Eggs (Giữ nguyên logic cũ)
         SyncEggsInterpolated();
     }
 
@@ -47,7 +42,6 @@ public class ClientManager : MonoBehaviour
         float serverTime = Time.time;
         float retentionTime = serverTime - interpolationDelay - 2.0f;
 
-        // Xử lý dữ liệu Bot
         var snapshots = serverManager.GetLatestSnapshots();
         foreach (var snap in snapshots)
         {
@@ -63,7 +57,6 @@ public class ClientManager : MonoBehaviour
                 history.RemoveAt(0);
         }
 
-        // Xử lý dữ liệu Egg (Giữ nguyên)
         if (serverManager.Eggs != null)
         {
             EggListSnapshot eggSnap = new EggListSnapshot
@@ -80,7 +73,6 @@ public class ClientManager : MonoBehaviour
         }
     }
 
-    // Hàm này đã được làm sạch nhờ InterpolationUtils
     private void UpdateBotsVisuals()
     {
         float renderTime = Time.time - interpolationDelay;
@@ -98,7 +90,6 @@ public class ClientManager : MonoBehaviour
             GameObject botObj = spawnedBots[botId];
             BotVisual visual = botObj.GetComponent<BotVisual>();
 
-            // GỌI UTILS Ở ĐÂY
             if (InterpolationUtils.CalculateInterpolation(history, renderTime, out Vector2 newPos, out float newStamina))
             {
                 botObj.transform.position = new Vector3(newPos.x, 0f, newPos.y);

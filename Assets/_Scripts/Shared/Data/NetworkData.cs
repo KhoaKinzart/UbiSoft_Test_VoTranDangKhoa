@@ -8,3 +8,4 @@ public struct BotSnapshot
     public float Stamina;
     public float Timestamp; 
 }
+

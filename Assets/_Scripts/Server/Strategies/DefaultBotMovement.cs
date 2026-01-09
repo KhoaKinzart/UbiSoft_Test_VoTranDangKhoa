@@ -1,11 +1,11 @@
-﻿// File: Assets/_Scripts/Server/Strategies/DefaultBotMovement.cs
+﻿
 using UnityEngine;
 
 namespace Server.Strategies
 {
     public class DefaultBotMovement : IBotMovement
     {
-        // Các hằng số logic
+
         private const float MIN_STAMINA_SPRINT = 15f;
         private const float DASH_COST = 30f;
         private const float SPRINT_COST = 25f;
@@ -14,16 +14,16 @@ namespace Server.Strategies
 
         public void UpdateMovement(BotEntity bot, float baseSpeed, float deltaTime)
         {
-            // 1. Xử lý Timer
+       
             if (bot.DashCooldownTimer > 0) bot.DashCooldownTimer -= deltaTime;
 
-            // 2. Hồi phục Stamina
+        
             if (!bot.IsSprinting && !bot.IsDashing)
             {
                 bot.RegenerateStamina(deltaTime);
             }
 
-            // 3. Kiểm tra đường đi
+   
             if (bot.CurrentPath == null || bot.CurrentPath.Count == 0)
             {
                 bot.IsSprinting = false;
@@ -35,7 +35,7 @@ namespace Server.Strategies
             float distToFinalDest = Vector2.Distance(bot.Position, bot.CurrentPath[bot.CurrentPath.Count - 1]);
             float distToNextNode = Vector2.Distance(bot.Position, targetPos);
 
-            // 4. Logic kích hoạt Dash
+         
             if (bot.IsDashing)
             {
                 bot.DashDurationTimer -= deltaTime;
@@ -46,7 +46,7 @@ namespace Server.Strategies
                 StartDash(bot);
             }
 
-            // 5. Tính toán tốc độ (Sprint/Normal)
+      
             float currentSpeed = baseSpeed;
             bot.IsSprinting = false;
 
@@ -67,11 +67,11 @@ namespace Server.Strategies
                 }
             }
 
-            // 6. Cập nhật vị trí
+
             Vector2 direction = (targetPos - bot.Position).normalized;
             bot.Position += direction * currentSpeed * deltaTime;
 
-            // 7. Kiểm tra đến waypoint tiếp theo
+           
             if (distToNextNode < 0.1f)
             {
                 bot.Position = targetPos;

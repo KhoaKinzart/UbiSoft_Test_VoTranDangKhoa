@@ -293,7 +293,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4bee66d92bc09dd4982231de7acc17bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  serverManager: {fileID: 0}
+  serverManager: {fileID: 1453533406}
   botPrefab: {fileID: 8232377578360276179, guid: 434d610a44d214646a23d94dab71585c, type: 3}
   eggPrefab: {fileID: 5023588754624116121, guid: a212748a47dd6934690ad348338d5e75, type: 3}
   interpolationDelay: 1.88
