@@ -101,3 +101,6 @@ Assets/TextMesh Pro/
 Assets/TextMesh Pro.meta
 .bezisidekick/.user-settings.json
 .bezisidekick/.settings.json
+Assets/_Scripts/Gameplay.meta
+Assets/_Scripts/Networking.meta
+Assets/_Scripts/Presentation.meta
