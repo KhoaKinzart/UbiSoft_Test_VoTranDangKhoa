@@ -10,11 +10,14 @@ public class ClientManager : MonoBehaviour
     [SerializeField] private GameObject botPrefab;
     [SerializeField] private GameObject eggPrefab;
 
+    [Header("Player References")]
+    [SerializeField] private GameObject localPlayerVisual;
+
     [Header("Network Settings")]
     [Range(0.05f, 5f)]
     [SerializeField] private float interpolationDelay = 0.1f;
 
-    // --- POOLING VARS (Giữ nguyên) ---
+    // --- POOLING VARS ---
     private Queue<GameObject> botPool = new Queue<GameObject>();
     private Queue<GameObject> eggPool = new Queue<GameObject>();
     private Dictionary<int, GameObject> spawnedBots = new Dictionary<int, GameObject>();
@@ -23,6 +26,7 @@ public class ClientManager : MonoBehaviour
     // --- DATA BUFFERS ---
     private Dictionary<int, List<BotSnapshot>> botHistoryBuffer = new Dictionary<int, List<BotSnapshot>>();
     private List<EggListSnapshot> eggHistoryBuffer = new List<EggListSnapshot>();
+    private List<PlayerSnapshot> playerHistoryBuffer = new List<PlayerSnapshot>();
 
     private struct EggListSnapshot
     {
@@ -32,14 +36,37 @@ public class ClientManager : MonoBehaviour
 
     void Update()
     {
-        // 1. Nhận dữ liệu
+        // 1. Gửi Input lên Server (Client Side Prediction starts here)
+        SendInputToServer();
+
+        // 2. Nhận dữ liệu từ Server
         ReceiveServerData();
 
-        // 2. Cập nhật vị trí Bots (Đã Refactor)
+        // 3. Cập nhật hiển thị (Interpolation)
         UpdateBotsVisuals();
-
-        // 3. Cập nhật Eggs (Giữ nguyên logic cũ)
+        UpdatePlayerVisual(); // Hàm xử lý hiển thị Player
         SyncEggsInterpolated();
+    }
+
+    private void SendInputToServer()
+    {
+        // Đọc phím mũi tên hoặc WASD
+        Vector2 inputDir = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+
+        // Chuẩn hóa vector để đi chéo không bị nhanh hơn
+        if (inputDir.magnitude > 1) inputDir.Normalize();
+
+        PlayerInputPacket packet = new PlayerInputPacket
+        {
+            MovementInput = inputDir,
+            IsDashing = Input.GetKey(KeyCode.Space)
+        };
+
+        // Gửi lên Server
+        if (serverManager != null)
+        {
+            serverManager.HandleClientInput(packet);
+        }
     }
 
     private void ReceiveServerData()
@@ -47,7 +74,23 @@ public class ClientManager : MonoBehaviour
         float serverTime = Time.time;
         float retentionTime = serverTime - interpolationDelay - 2.0f;
 
-        // Xử lý dữ liệu Bot
+        // --- A. XỬ LÝ PLAYER DATA ---
+        // Lấy snapshot mới nhất của Player từ Server
+        // (Giả định ServerManager đã có hàm GetPlayerSnapshot như hướng dẫn trước)
+        PlayerSnapshot playerSnap = serverManager.GetPlayerSnapshot();
+
+        if (playerHistoryBuffer.Count == 0 || playerSnap.Timestamp > playerHistoryBuffer[playerHistoryBuffer.Count - 1].Timestamp)
+        {
+            playerHistoryBuffer.Add(playerSnap);
+        }
+
+        // Xóa dữ liệu Player cũ
+        while (playerHistoryBuffer.Count > 0 && playerHistoryBuffer[0].Timestamp < retentionTime)
+        {
+            playerHistoryBuffer.RemoveAt(0);
+        }
+
+        // --- B. XỬ LÝ BOT DATA ---
         var snapshots = serverManager.GetLatestSnapshots();
         foreach (var snap in snapshots)
         {
@@ -63,7 +106,7 @@ public class ClientManager : MonoBehaviour
                 history.RemoveAt(0);
         }
 
-        // Xử lý dữ liệu Egg (Giữ nguyên)
+        // --- C. XỬ LÝ EGG DATA ---
         if (serverManager.Eggs != null)
         {
             EggListSnapshot eggSnap = new EggListSnapshot
@@ -80,7 +123,6 @@ public class ClientManager : MonoBehaviour
         }
     }
 
-    // Hàm này đã được làm sạch nhờ InterpolationUtils
     private void UpdateBotsVisuals()
     {
         float renderTime = Time.time - interpolationDelay;
@@ -98,7 +140,7 @@ public class ClientManager : MonoBehaviour
             GameObject botObj = spawnedBots[botId];
             BotVisual visual = botObj.GetComponent<BotVisual>();
 
-            // GỌI UTILS Ở ĐÂY
+            // Sử dụng InterpolationUtils để tính toán vị trí mượt mà
             if (InterpolationUtils.CalculateInterpolation(history, renderTime, out Vector2 newPos, out float newStamina))
             {
                 botObj.transform.position = new Vector3(newPos.x, 0f, newPos.y);
@@ -106,6 +148,50 @@ public class ClientManager : MonoBehaviour
             }
         }
     }
+
+    private void UpdatePlayerVisual()
+    {
+        if (localPlayerVisual == null) return;
+
+        float renderTime = Time.time - interpolationDelay;
+
+        // Tìm 2 snapshot bao quanh renderTime để nội suy
+        PlayerSnapshot fromSnap = new PlayerSnapshot();
+        PlayerSnapshot toSnap = new PlayerSnapshot();
+        bool found = false;
+
+        for (int i = 0; i < playerHistoryBuffer.Count - 1; i++)
+        {
+            if (playerHistoryBuffer[i].Timestamp <= renderTime &&
+                playerHistoryBuffer[i + 1].Timestamp >= renderTime)
+            {
+                fromSnap = playerHistoryBuffer[i];
+                toSnap = playerHistoryBuffer[i + 1];
+                found = true;
+                break;
+            }
+        }
+
+        if (found)
+        {
+            float totalTime = toSnap.Timestamp - fromSnap.Timestamp;
+            float t = 0;
+            if (totalTime > 0.0001f)
+            {
+                t = (renderTime - fromSnap.Timestamp) / totalTime;
+            }
+
+            Vector2 interpolatedPos = Vector2.Lerp(fromSnap.Position, toSnap.Position, t);
+            localPlayerVisual.transform.position = new Vector3(interpolatedPos.x, 0.5f, interpolatedPos.y);
+        }
+        else if (playerHistoryBuffer.Count > 0)
+        {
+            // Nếu không đủ dữ liệu nội suy, dùng dữ liệu mới nhất
+            var lastSnap = playerHistoryBuffer[playerHistoryBuffer.Count - 1];
+            localPlayerVisual.transform.position = new Vector3(lastSnap.Position.x, 0.5f, lastSnap.Position.y);
+        }
+    }
+
     private void SyncEggsInterpolated()
     {
         float renderTime = Time.time - interpolationDelay;
@@ -158,6 +244,7 @@ public class ClientManager : MonoBehaviour
         }
     }
 
+    // --- OBJECT POOLING METHODS ---
 
     private GameObject GetBotFromPool(int id)
     {

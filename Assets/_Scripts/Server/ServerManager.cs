@@ -24,6 +24,12 @@ public class ServerManager : MonoBehaviour
     private AStar pathfindingEngine;
     private bool isServerReady = false;
 
+    // --- PLAYER VARIABLES (Đã cập nhật đầy đủ) ---
+    private Vector2 playerPosition;
+    private PlayerInputPacket currentInput; // Lưu input để xử lý trong Update
+    private bool isPlayerActive = false;
+    private float playerStamina = 100f; // Thêm stamina cho player nếu cần
+
     void Start()
     {
         StartCoroutine(WaitForMap());
@@ -45,36 +51,89 @@ public class ServerManager : MonoBehaviour
 
         SpawnEggs();
         SpawnBots();
+        SpawnPlayer(); // <--- GỌI HÀM SPAWN PLAYER
 
         isServerReady = true;
         Debug.Log("Server Simulation Started!");
+    }
+
+    private void SpawnPlayer()
+    {
+        Vector2Int startPos = GetRandomWalkablePosition();
+        playerPosition = new Vector2(startPos.x, startPos.y);
+        isPlayerActive = true;
+        playerStamina = 100f;
     }
 
     void Update()
     {
         if (!isServerReady) return;
 
+        float dt = Time.deltaTime;
+
+        // 1. XỬ LÝ PLAYER (Thêm logic ăn trứng cho Player)
+        if (isPlayerActive)
+        {
+            UpdatePlayerMovement(dt);
+            
+            // Check ăn trứng cho Player (Sử dụng hàm overload mới)
+            Vector2Int playerGridPos = new Vector2Int(Mathf.RoundToInt(playerPosition.x), Mathf.RoundToInt(playerPosition.y));
+            CheckEggCollection(playerGridPos, true); 
+        }
+
+        // 2. XỬ LÝ BOTS
         foreach (var bot in bots)
         {
-            // [THAY ĐỔI QUAN TRỌNG]
-            // Thay thế bot.UpdateLogic() và bot.Move() bằng bot.Tick()
-            bot.Tick(botSpeed, Time.deltaTime);
+            bot.Tick(botSpeed, dt);
 
-            CheckEggCollection(bot);
+            // Check ăn trứng cho Bot
+            CheckEggCollection(bot.GridPosition, false);
 
-            // Kiểm tra IsMoving (Đã được định nghĩa trong BotEntity mới)
             if (!bot.IsMoving)
             {
                 AssignNearestEggAsTarget(bot);
             }
         }
 
-        // Logic sinh trứng ngẫu nhiên khi số lượng ít
+        // 3. SINH TRỨNG
         if (eggs.Count < eggCount / 2)
         {
             Vector2Int pos = GetRandomWalkablePosition();
             eggs.Add(new EggEntity(Random.Range(10000, 99999), pos));
         }
+    }
+
+    // Xử lý di chuyển trong Update loop để đồng bộ
+    private void UpdatePlayerMovement(float dt)
+    {
+        if (currentInput.MovementInput == Vector2.zero) return;
+
+        // Tính toán vị trí dự kiến
+        Vector2 moveStep = currentInput.MovementInput * botSpeed * dt;
+        Vector2 potentialPos = playerPosition + moveStep;
+
+        // Check va chạm
+        if (IsValidMovePosition(potentialPos))
+        {
+            playerPosition = potentialPos;
+        }
+    }
+
+    // Client gọi hàm này để gửi Input (Chỉ lưu lại, không di chuyển ngay)
+    public void HandleClientInput(PlayerInputPacket input)
+    {
+        if (!isServerReady) return;
+        currentInput = input;
+    }
+
+    public PlayerSnapshot GetPlayerSnapshot()
+    {
+        return new PlayerSnapshot
+        {
+            Position = playerPosition,
+            Stamina = playerStamina,
+            Timestamp = Time.time
+        };
     }
 
     public List<BotSnapshot> GetLatestSnapshots()
@@ -93,6 +152,52 @@ public class ServerManager : MonoBehaviour
             });
         }
         return snapshots;
+    }
+
+    // --- HÀM LOGIC GAME ---
+
+    // Hàm check ăn trứng (Đã sửa để dùng chung cho cả Bot và Player)
+    private void CheckEggCollection(Vector2Int entityGridPos, bool isPlayer)
+    {
+        for (int i = eggs.Count - 1; i >= 0; i--)
+        {
+            if (eggs[i].GridPosition == entityGridPos)
+            {
+                Vector2Int eatenEggPos = eggs[i].GridPosition;
+                eggs.RemoveAt(i);
+
+                if (isPlayer) Debug.Log("Player ATE an EGG!");
+
+                // Thông báo cho các bot khác hủy đường đi nếu đang nhắm đến trứng này
+                foreach (var otherBot in bots)
+                {
+                    // Nếu là bot đang check thì bỏ qua (chỉ áp dụng nếu entity là bot)
+                    if (!isPlayer && otherBot.GridPosition == entityGridPos) continue;
+
+                    Vector2Int? dest = otherBot.GetFinalDestination();
+                    if (dest.HasValue && dest.Value == eatenEggPos)
+                    {
+                        otherBot.SetPath(null); // Bot dừng lại tính đường mới
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    private bool IsValidMovePosition(Vector2 pos)
+    {
+        int gridX = Mathf.RoundToInt(pos.x);
+        int gridY = Mathf.RoundToInt(pos.y);
+
+        if (gridX < 0 || gridX >= gridManager.CurrentWidth || 
+            gridY < 0 || gridY >= gridManager.CurrentHeight)
+            return false;
+
+        if (gridManager.GridData[gridX, gridY] == 1)
+            return false;
+
+        return true;
     }
 
     private void SpawnEggs()
@@ -118,29 +223,18 @@ public class ServerManager : MonoBehaviour
                 isOverlapping = false;
                 attempts++;
 
-                // Check trùng vị trí trứng
                 foreach (var egg in eggs)
                 {
-                    if (egg.GridPosition == startPos)
-                    {
-                        isOverlapping = true;
-                        break;
-                    }
+                    if (egg.GridPosition == startPos) { isOverlapping = true; break; }
                 }
 
-                // Check trùng vị trí bot khác
                 if (!isOverlapping)
                 {
                     foreach (var b in bots)
                     {
-                        if (b.GridPosition == startPos)
-                        {
-                            isOverlapping = true;
-                            break;
-                        }
+                        if (b.GridPosition == startPos) { isOverlapping = true; break; }
                     }
                 }
-
             } while (isOverlapping && attempts < 50);
 
             BotEntity newBot = new BotEntity(i, startPos);
@@ -149,39 +243,10 @@ public class ServerManager : MonoBehaviour
         }
     }
 
-    private void CheckEggCollection(BotEntity bot)
-    {
-        for (int i = eggs.Count - 1; i >= 0; i--)
-        {
-            if (eggs[i].GridPosition == bot.GridPosition)
-            {
-                Vector2Int eatenEggPos = eggs[i].GridPosition;
-                eggs.RemoveAt(i);
-
-                // Bot ăn xong thì dừng lại
-                bot.SetPath(null);
-
-                // Các bot khác đang nhắm đến trứng này cũng phải dừng lại tính toán lại
-                foreach (var otherBot in bots)
-                {
-                    if (otherBot == bot) continue;
-
-                    Vector2Int? dest = otherBot.GetFinalDestination();
-                    if (dest.HasValue && dest.Value == eatenEggPos)
-                    {
-                        otherBot.SetPath(null);
-                    }
-                }
-                break;
-            }
-        }
-    }
-
     private void AssignNearestEggAsTarget(BotEntity bot)
     {
         if (eggs.Count == 0) return;
 
-        // Tìm trứng gần nhất
         var sortedEggs = eggs.OrderBy(e =>
             Mathf.Abs(bot.GridPosition.x - e.GridPosition.x) +
             Mathf.Abs(bot.GridPosition.y - e.GridPosition.y)
@@ -190,7 +255,6 @@ public class ServerManager : MonoBehaviour
         foreach (var egg in sortedEggs)
         {
             List<Vector2Int> path = pathfindingEngine.FindPath(bot.GridPosition, egg.GridPosition);
-
             if (path != null && path.Count > 0)
             {
                 bot.SetPath(path);
@@ -219,21 +283,22 @@ public class ServerManager : MonoBehaviour
         if (!isServerReady) return;
 
         Gizmos.color = Color.green;
-        if (eggs != null)
+        foreach (var egg in eggs)
         {
-            foreach (var egg in eggs)
-            {
-                Gizmos.DrawSphere(new Vector3(egg.GridPosition.x, 0.5f, egg.GridPosition.y), 0.4f);
-            }
+            Gizmos.DrawSphere(new Vector3(egg.GridPosition.x, 0.5f, egg.GridPosition.y), 0.4f);
         }
 
         Gizmos.color = Color.black;
-        if (bots != null)
+        foreach (var bot in bots)
         {
-            foreach (var bot in bots)
-            {
-                Gizmos.DrawSphere(new Vector3(bot.Position.x, 0.5f, bot.Position.y), 0.3f);
-            }
+            Gizmos.DrawSphere(new Vector3(bot.Position.x, 0.5f, bot.Position.y), 0.3f);
+        }
+
+        // Vẽ Gizmo cho Player để dễ debug
+        if (isPlayerActive)
+        {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawSphere(new Vector3(playerPosition.x, 0.5f, playerPosition.y), 0.4f);
         }
     }
 }
