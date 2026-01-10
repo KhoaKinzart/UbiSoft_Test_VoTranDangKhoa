@@ -10,11 +10,11 @@ public class PathfindingTester : MonoBehaviour
     [SerializeField] private bool showGizmos = true;
     [SerializeField] private Color pathColor = Color.cyan;
 
-    // L?u ?i?m b?t ??u và k?t thúc (T?a ?? Grid)
+    // L?u ?i?m b?t ??u vï¿½ k?t thï¿½c (T?a ?? Grid)
     private Vector2Int startCoord;
     private Vector2Int endCoord;
 
-    // Engine tìm ???ng
+    // Engine tï¿½m ???ng
     private AStar aStarEngine;
     private List<Vector2Int> currentPath;
 
@@ -23,7 +23,7 @@ public class PathfindingTester : MonoBehaviour
 
     void Start()
     {
-        // M?c ??nh ch?n ?i?m (0,0) và (1,1) ?? test
+        // M?c ??nh ch?n ?i?m (0,0) vï¿½ (1,1) ?? test
         startCoord = new Vector2Int(0, 0);
         endCoord = new Vector2Int(1, 1);
     }
@@ -33,7 +33,7 @@ public class PathfindingTester : MonoBehaviour
         // 1. Ch? GridManager sinh map xong m?i kh?i t?o A*
         if (!isInitialized)
         {
-            // THÊM: && gridManager.IsMapReady
+            // THï¿½M: && gridManager.IsMapReady
             if (gridManager != null && gridManager.GridData != null && gridManager.IsMapReady)
             {
                 InitializeEngine();
@@ -41,32 +41,31 @@ public class PathfindingTester : MonoBehaviour
             return;
         }
 
-        // 2. Nh?n Input chu?t ?? test cho l? (Trái: Start, Ph?i: End)
+        // 2. Nh?n Input chu?t ?? test cho l? (Trï¿½i: Start, Ph?i: End)
         HandleMouseInput();
     }
 
     private void InitializeEngine()
     {
-        // Kh?i t?o A* v?i kích th??c th?t c?a Map
+        // Kh?i t?o A* v?i kï¿½ch th??c th?t c?a Map
         aStarEngine = new AStar(gridManager.CurrentWidth, gridManager.CurrentHeight);
 
-        // N?p d? li?u v?t c?n vào A*
+        // N?p d? li?u v?t c?n vï¿½o A*
         aStarEngine.UpdateGridObstacles(gridManager.GridData);
 
         isInitialized = true;
-        Debug.Log("Pathfinding Tester Ready! Click chu?t trái/ph?i ?? ch?n ?i?m ?i.");
 
         RecalculatePath();
     }
 
     private void HandleMouseInput()
     {
-        if (Input.GetMouseButtonDown(0)) // Chu?t trái -> Ch?n ?i?m b?t ??u
+        if (Input.GetMouseButtonDown(0)) // Chu?t trï¿½i -> Ch?n ?i?m b?t ??u
         {
             SetCoordinateFromMouse(ref startCoord);
             RecalculatePath();
         }
-        else if (Input.GetMouseButtonDown(1)) // Chu?t ph?i -> Ch?n ?ích ??n
+        else if (Input.GetMouseButtonDown(1)) // Chu?t ph?i -> Ch?n ?ï¿½ch ??n
         {
             SetCoordinateFromMouse(ref endCoord);
             RecalculatePath();
@@ -87,7 +86,6 @@ public class PathfindingTester : MonoBehaviour
             z = Mathf.Clamp(z, 0, gridManager.CurrentHeight - 1);
 
             targetCoord = new Vector2Int(x, z);
-            Debug.Log($"Selected Point: {targetCoord}");
         }
     }
 
@@ -95,13 +93,7 @@ public class PathfindingTester : MonoBehaviour
     {
         if (aStarEngine == null) return;
 
-        // G?i thu?t toán A* c?a chúng ta
         currentPath = aStarEngine.FindPath(startCoord, endCoord);
-
-        if (currentPath == null)
-        {
-            Debug.LogWarning("Không tìm th?y ???ng ?i! (Có th? b? ch?n)");
-        }
     }
 
     // --- PH?N QUAN TR?NG: V? GIZMOS ---
@@ -109,15 +101,15 @@ public class PathfindingTester : MonoBehaviour
     {
         if (!showGizmos || gridManager == null) return;
 
-        // 1. V? ?i?m B?t ??u (C?c màu Xanh Lá)
+        // 1. V? ?i?m B?t ??u (C?c mï¿½u Xanh Lï¿½)
         Gizmos.color = Color.green;
         Gizmos.DrawCube(new Vector3(startCoord.x, 0.5f, startCoord.y), Vector3.one * 0.8f);
 
-        // 2. V? ?i?m ?ích (C?c màu ??)
+        // 2. V? ?i?m ?ï¿½ch (C?c mï¿½u ??)
         Gizmos.color = Color.red;
         Gizmos.DrawCube(new Vector3(endCoord.x, 0.5f, endCoord.y), Vector3.one * 0.8f);
 
-        // 3. V? ???ng ?i (Line màu Cyan)
+        // 3. V? ???ng ?i (Line mï¿½u Cyan)
         if (currentPath != null && currentPath.Count > 1)
         {
             Gizmos.color = pathColor;
@@ -126,11 +118,11 @@ public class PathfindingTester : MonoBehaviour
                 Vector2Int nodeA = currentPath[i];
                 Vector2Int nodeB = currentPath[i + 1];
 
-                Vector3 posA = new Vector3(nodeA.x, 1f, nodeA.y); // V? cao lên Y=1 cho d? th?y
+                Vector3 posA = new Vector3(nodeA.x, 1f, nodeA.y); // V? cao lï¿½n Y=1 cho d? th?y
                 Vector3 posB = new Vector3(nodeB.x, 1f, nodeB.y);
 
                 Gizmos.DrawLine(posA, posB);
-                Gizmos.DrawSphere(posA, 0.2f); // V? thêm c?c tròn nh? ? m?i b??c
+                Gizmos.DrawSphere(posA, 0.2f); // V? thï¿½m c?c trï¿½n nh? ? m?i b??c
             }
         }
     }

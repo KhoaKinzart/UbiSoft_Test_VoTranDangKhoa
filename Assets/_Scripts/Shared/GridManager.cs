@@ -1,18 +1,45 @@
 using UnityEngine;
 using System.Collections;
 using System;
+using Game.ProceduralGeneration;
 
 public class GridManager : MonoBehaviour
 {
     [SerializeField] private MapConfig config;
     [SerializeField] private GameObject groundPrefab;
     [SerializeField] private GameObject obstaclePrefab;
+    
+    [Header("Map Generation")]
+    [SerializeField] private MapGenerationType generationType = MapGenerationType.ConnectedRandom;
 
     public int[,] GridData { get; private set; }
     public int CurrentWidth { get; private set; }
     public int CurrentHeight { get; private set; }
     public Vector3 CenterPosition { get; private set; }
     public bool IsMapReady { get; private set; } = false;
+
+    private IMapGenerator _mapGenerator;
+
+    private void Awake()
+    {
+        SetupGenerator();
+    }
+
+    private void SetupGenerator()
+    {
+        switch (generationType)
+        {
+            case MapGenerationType.ConnectedRandom:
+                _mapGenerator = new ConnectedMapGenerator();
+                break;
+            case MapGenerationType.CellularAutomata:
+                _mapGenerator = new CellularAutomataGenerator();
+                break;
+            default:
+                _mapGenerator = new ConnectedMapGenerator();
+                break;
+        }
+    }
 
     public IEnumerator GenerateMapRoutine(int playerCount, Action onComplete)
     {
@@ -22,19 +49,24 @@ public class GridManager : MonoBehaviour
         foreach (Transform child in transform) Destroy(child.gameObject);
         yield return null;
 
-        GridData = new int[CurrentWidth, CurrentHeight];
+        GridData = _mapGenerator.Generate(CurrentWidth, CurrentHeight, config.obstacleProbability);
         CreateBigGround();
 
         int centerX = CurrentWidth / 2;
         int centerZ = CurrentHeight / 2;
         CenterPosition = new Vector3(centerX, 1f, centerZ);
 
+        int obstacleCount = 0;
         int cellsProcessed = 0;
         for (int x = 0; x < CurrentWidth; x++)
         {
             for (int z = 0; z < CurrentHeight; z++)
             {
-                ProcessCell(x, z, centerX, centerZ);
+                if (GridData[x, z] == 1)
+                {
+                    SpawnObstacle(x, z);
+                    obstacleCount++;
+                }
 
                 cellsProcessed++;
                 if (cellsProcessed >= config.cellsPerFrame)
@@ -44,7 +76,9 @@ public class GridManager : MonoBehaviour
                 }
             }
         }
-        IsMapReady = true; 
+        
+        IsMapReady = true;
+        
         onComplete?.Invoke();
     }
 
@@ -68,20 +102,14 @@ public class GridManager : MonoBehaviour
             bigGround.GetComponent<MeshRenderer>().material = groundPrefab.GetComponent<MeshRenderer>().sharedMaterial;
     }
 
-    private void ProcessCell(int x, int z, int cx, int cz)
-    {
-        bool isEdge = (x == 0 || z == 0 || x == CurrentWidth - 1 || z == CurrentHeight - 1);
-        bool isSafe = (Mathf.Abs(x - cx) <= config.safeZoneSize && Mathf.Abs(z - cz) <= config.safeZoneSize);
-
-        if (isEdge) SpawnObstacle(x, z);
-        else if (isSafe) GridData[x, z] = 0;
-        else if (UnityEngine.Random.value < config.obstacleProbability) SpawnObstacle(x, z);
-        else GridData[x, z] = 0;
-    }
-
     private void SpawnObstacle(int x, int z)
     {
         Instantiate(obstaclePrefab, new Vector3(x, 0.5f, z), Quaternion.identity, transform);
-        GridData[x, z] = 1;
     }
+}
+
+public enum MapGenerationType
+{
+    ConnectedRandom,
+    CellularAutomata
 }
