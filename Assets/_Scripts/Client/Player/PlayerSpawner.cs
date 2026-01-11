@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using Client.Utils;
+using Game.Rendering;
 
 public class PlayerSpawner : MonoBehaviour
 {
@@ -8,6 +9,8 @@ public class PlayerSpawner : MonoBehaviour
     [SerializeField] private GridManager gridManager;
     [SerializeField] private SimulationController simulationController;
     [SerializeField] private CameraFollow cameraFollow;
+    [SerializeField] private ChunkLoadingSystem chunkLoadingSystem;
+    [SerializeField] private Transform dynamicContainer;
 
     [Header("Player Setup")]
     [SerializeField] private GameObject playerPrefab;
@@ -39,7 +42,7 @@ public class PlayerSpawner : MonoBehaviour
     private void SpawnLocalPlayer()
     {
         Vector3 spawnPos = gridManager.CenterPosition;
-        _localPlayer = Instantiate(playerPrefab, spawnPos, Quaternion.identity);
+        _localPlayer = Instantiate(playerPrefab, spawnPos, Quaternion.identity, dynamicContainer);
         _localPlayer.name = "LocalPlayer";
 
         CharacterController controller = _localPlayer.GetComponent<CharacterController>();
@@ -63,6 +66,11 @@ public class PlayerSpawner : MonoBehaviour
         if (cameraFollow != null)
         {
             cameraFollow.SetTarget(_localPlayer.transform);
+        }
+
+        if (chunkLoadingSystem != null)
+        {
+            chunkLoadingSystem.SetPlayerTransform(_localPlayer.transform);
         }
     }
 }

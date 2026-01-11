@@ -42,7 +42,11 @@ public class PlayerInput : MonoBehaviour
         if (!_isInitialized || _simulationController == null || _playerId == -1)
             return;
 
-        // Get server position
+        if (_simulationController.Simulation != null && _simulationController.Simulation.IsGameOver())
+        {
+            return;
+        }
+
         var snapshots = _simulationController.Simulation?.GetSnapshots();
         if (snapshots != null)
         {
@@ -56,7 +60,6 @@ public class PlayerInput : MonoBehaviour
             }
         }
 
-        // Send input to server ONLY
         Vector2 input = new Vector2(
             Input.GetAxisRaw("Horizontal"),
             Input.GetAxisRaw("Vertical")
@@ -67,11 +70,9 @@ public class PlayerInput : MonoBehaviour
         
         _simulationController.SendPlayerInput(_playerId, input, sprint, dash);
 
-        // Smooth move client to server position (NO PREDICTION)
         Vector3 targetPos = new Vector3(_serverPosition.x, transform.position.y, _serverPosition.y);
         Vector3 smoothedPos = Vector3.Lerp(transform.position, targetPos, smoothSpeed * Time.deltaTime);
 
-        // Use CharacterController for physics
         Vector3 movement = smoothedPos - transform.position;
         _controller.Move(movement);
     }

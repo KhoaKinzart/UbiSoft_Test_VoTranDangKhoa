@@ -19,10 +19,6 @@ public class MapGenerationTester : MonoBehaviour
     private void Start()
     {
         _gridManager = FindObjectOfType<GridManager>();
-        if (_gridManager == null)
-        {
-            Debug.LogError("GridManager not found!");
-        }
     }
 
     [ContextMenu("Run Map Generation Test")]
@@ -30,7 +26,6 @@ public class MapGenerationTester : MonoBehaviour
     {
         if (_isTesting)
         {
-            Debug.LogWarning("Test already running!");
             return;
         }
 
@@ -45,11 +40,8 @@ public class MapGenerationTester : MonoBehaviour
         lowObstacleMaps = 0;
         goodMaps = 0;
 
-        Debug.Log($"<color=cyan>🧪 Starting map generation test ({testIterations} iterations)...</color>");
-
         for (int i = 0; i < testIterations; i++)
         {
-            Debug.Log($"<color=yellow>--- Test {i + 1}/{testIterations} ---</color>");
             
             yield return _gridManager.GenerateMapRoutine(1, null);
             
@@ -59,17 +51,14 @@ public class MapGenerationTester : MonoBehaviour
             if (obstacleCount == 0)
             {
                 emptyMaps++;
-                Debug.LogError($"<color=red>❌ EMPTY MAP DETECTED! (Test {i + 1})</color>");
             }
             else if (obstacleCount < 10)
             {
                 lowObstacleMaps++;
-                Debug.LogWarning($"<color=orange>⚠️ Low obstacles: {obstacleCount} (Test {i + 1})</color>");
             }
             else
             {
                 goodMaps++;
-                Debug.Log($"<color=lime>✅ Good map: {obstacleCount} obstacles (Test {i + 1})</color>");
             }
 
             yield return new WaitForSeconds(delayBetweenTests);
@@ -100,21 +89,6 @@ public class MapGenerationTester : MonoBehaviour
         float emptyPercent = (float)emptyMaps / totalTests * 100f;
         float lowPercent = (float)lowObstacleMaps / totalTests * 100f;
         float goodPercent = (float)goodMaps / totalTests * 100f;
-
-        Debug.Log("\n" +
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-            "<color=cyan><b>📊 MAP GENERATION TEST REPORT</b></color>\n" +
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-            $"Total Tests: <color=white><b>{totalTests}</b></color>\n" +
-            $"\n" +
-            $"<color=lime>✅ Good Maps:</color> {goodMaps} ({goodPercent:F1}%)\n" +
-            $"<color=orange>⚠️ Low Obstacles:</color> {lowObstacleMaps} ({lowPercent:F1}%)\n" +
-            $"<color=red>❌ Empty Maps:</color> {emptyMaps} ({emptyPercent:F1}%)\n" +
-            $"\n" +
-            (emptyMaps > 0 
-                ? "<color=red><b>⚠️ ISSUE DETECTED!</b> Empty maps found. Check fallback logic.</color>\n"
-                : "<color=lime><b>✅ ALL GOOD!</b> No empty maps detected.</color>\n") +
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
     }
 
     [ContextMenu("Quick Single Test")]
@@ -123,11 +97,6 @@ public class MapGenerationTester : MonoBehaviour
         if (_gridManager != null && _gridManager.GridData != null)
         {
             int count = CountObstacles();
-            Debug.Log($"<color=cyan>Current map has {count} obstacles</color>");
-        }
-        else
-        {
-            Debug.LogWarning("No map data available!");
         }
     }
 }

@@ -25,6 +25,11 @@ public class SimulationController : MonoBehaviour
     {
         if (Simulation == null) return;
 
+        if (Simulation.IsGameOver())
+        {
+            return;
+        }
+
         _tickTimer += Time.deltaTime;
 
         while (_tickTimer >= _tickInterval)
@@ -42,5 +47,10 @@ public class SimulationController : MonoBehaviour
     public void SendPlayerInput(int playerId, Vector2 input, bool sprint, bool dash = false)
     {
         Simulation?.SendPlayerInput(playerId, input, sprint, dash);
+    }
+
+    public float GetCurrentLatency()
+    {
+        return 0.0f;
     }
 }
