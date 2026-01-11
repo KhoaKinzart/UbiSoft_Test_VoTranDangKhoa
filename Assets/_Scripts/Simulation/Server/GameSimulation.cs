@@ -4,6 +4,7 @@ using Game.Gameplay.Entities;
 using Game.Simulation.Pathfinding;
 using Game.Networking.Snapshot;
 using Game.Simulation.Server.Managers;
+using Game.Gameplay.Systems;
 
 namespace Game.Simulation.Server
 {
@@ -16,6 +17,9 @@ namespace Game.Simulation.Server
         private readonly IPlayerManager _playerManager;
         private readonly ICollectibleManager _collectibleManager;
         private readonly IAgentManager _agentManager;
+        private readonly IScoreTracker _scoreTracker;
+        private readonly IGameTimer _gameTimer;
+        private readonly IGameStateManager _gameStateManager;
 
         public GameSimulation(int[,] gridData, int width, int height, IPathfindingService pathfinding)
         {
@@ -26,6 +30,10 @@ namespace Game.Simulation.Server
             _playerManager = new PlayerManager();
             _collectibleManager = new CollectibleManager(gridData, width, height);
             _agentManager = new AgentManager(gridData, width, height, pathfinding, _collectibleManager);
+            
+            _scoreTracker = new ScoreSystem();
+            _gameTimer = new GameTimerSystem();
+            _gameStateManager = new GameStateManager(_gameTimer, _scoreTracker);
         }
 
         public void Initialize(int botCount, int collectibleCount)
@@ -36,6 +44,13 @@ namespace Game.Simulation.Server
 
         public void Tick(float deltaTime)
         {
+            _gameStateManager.Update(deltaTime);
+            
+            if (IsGameOver())
+            {
+                return;
+            }
+            
             _playerManager.Update(deltaTime, _gridData, _gridWidth, _gridHeight);
             
             if (_playerManager.LocalPlayer != null)
@@ -91,6 +106,26 @@ namespace Game.Simulation.Server
         public PlayerEntity GetLocalPlayer()
         {
             return _playerManager.LocalPlayer;
+        }
+
+        public int GetScore(int entityId)
+        {
+            return _scoreTracker.GetScore(entityId);
+        }
+
+        public float GetTimeRemaining()
+        {
+            return _gameTimer.TimeRemaining;
+        }
+
+        public bool IsGameOver()
+        {
+            return _gameStateManager.CurrentState == GameState.GameOver;
+        }
+
+        public void StartGame(float duration)
+        {
+            _gameStateManager.StartGame(duration);
         }
     }
 }

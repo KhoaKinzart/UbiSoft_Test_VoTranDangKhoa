@@ -29,11 +29,9 @@ namespace Game.Debugging
         {
             if (!showTargetLine || !_hasTarget) return;
 
-            // Draw line to target
             Gizmos.color = lineColor;
             Gizmos.DrawLine(transform.position, _targetPosition);
             
-            // Draw target sphere
             Gizmos.DrawWireSphere(_targetPosition, 0.3f);
         }
 

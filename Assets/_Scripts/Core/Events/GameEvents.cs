@@ -35,4 +35,28 @@ namespace Game.Core.Events
         public float MaxStamina;
         public bool IsSprinting;
     }
+
+    public struct ScoreChangedEvent : IGameEvent
+    {
+        public int EntityID;
+        public int NewScore;
+        public int PointsAdded;
+    }
+
+    public struct GameTimerStartedEvent : IGameEvent
+    {
+        public float Duration;
+    }
+
+    public struct GameTimerFinishedEvent : IGameEvent
+    {
+        public float TotalTime;
+    }
+
+    public struct GameOverEvent : IGameEvent
+    {
+        public int WinnerID;
+        public int WinnerScore;
+        public bool IsPlayer;
+    }
 }

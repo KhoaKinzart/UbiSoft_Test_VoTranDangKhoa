@@ -16,6 +16,9 @@ namespace Game.Simulation.Server.Managers
         private readonly int[,] _gridData;
         private readonly int _gridWidth;
         private readonly int _gridHeight;
+        
+        private readonly Dictionary<int, float> _agentReEvaluationTimers;
+        private const float RE_EVALUATION_INTERVAL = 0.5f;
 
         public IReadOnlyList<AgentEntity> Agents => _agents;
 
@@ -32,6 +35,7 @@ namespace Game.Simulation.Server.Managers
             _gridHeight = gridHeight;
             _pathfinding = pathfinding;
             _collectibleManager = collectibleManager;
+            _agentReEvaluationTimers = new Dictionary<int, float>();
         }
 
         public void SpawnAgents(int count)
@@ -42,6 +46,7 @@ namespace Game.Simulation.Server.Managers
                 var agent = new AgentEntity(i, pos, new DefaultMovementStrategy());
                 AssignNearestCollectibleAsTarget(agent);
                 _agents.Add(agent);
+                _agentReEvaluationTimers[i] = 0f;
             }
         }
 
@@ -52,9 +57,35 @@ namespace Game.Simulation.Server.Managers
                 agent.Tick(deltaTime);
                 _collectibleManager.CheckCollections(agent);
 
-                if (!agent.IsMoving || IsTargetCollectibleGone(agent))
+                if (!_agentReEvaluationTimers.ContainsKey(agent.ID))
+                {
+                    _agentReEvaluationTimers[agent.ID] = 0f;
+                }
+                
+                _agentReEvaluationTimers[agent.ID] += deltaTime;
+                
+                bool shouldReEvaluate = false;
+                
+                if (!agent.IsMoving)
+                {
+                    shouldReEvaluate = true;
+                }
+                else if (IsTargetCollectibleGone(agent))
+                {
+                    shouldReEvaluate = true;
+                }
+                else if (_agentReEvaluationTimers[agent.ID] >= RE_EVALUATION_INTERVAL)
+                {
+                    if (HasCloserCollectible(agent))
+                    {
+                        shouldReEvaluate = true;
+                    }
+                }
+                
+                if (shouldReEvaluate)
                 {
                     AssignNearestCollectibleAsTarget(agent);
+                    _agentReEvaluationTimers[agent.ID] = 0f;
                 }
             }
         }
@@ -93,6 +124,35 @@ namespace Game.Simulation.Server.Managers
             }
 
             return true;
+        }
+        
+        private bool HasCloserCollectible(AgentEntity agent)
+        {
+            if (_collectibleManager.Collectibles.Count == 0)
+                return false;
+            
+            Vector2Int? currentTarget = agent.GetFinalDestination();
+            if (!currentTarget.HasValue)
+                return false;
+            
+            float currentTargetDistance = Mathf.Abs(agent.GridPosition.x - currentTarget.Value.x) +
+                                          Mathf.Abs(agent.GridPosition.y - currentTarget.Value.y);
+            
+            foreach (var collectible in _collectibleManager.Collectibles)
+            {
+                if (collectible.GridPosition == currentTarget.Value)
+                    continue;
+                
+                float distance = Mathf.Abs(agent.GridPosition.x - collectible.GridPosition.x) +
+                                 Mathf.Abs(agent.GridPosition.y - collectible.GridPosition.y);
+                
+                if (distance < currentTargetDistance - 2f)
+                {
+                    return true;
+                }
+            }
+            
+            return false;
         }
 
         private void AssignNearestCollectibleAsTarget(AgentEntity agent)

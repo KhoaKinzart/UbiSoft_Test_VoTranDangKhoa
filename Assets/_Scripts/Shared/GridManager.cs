@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System;
 using Game.ProceduralGeneration;
+using Game.Rendering;
 
 public class GridManager : MonoBehaviour
 {
@@ -10,7 +11,11 @@ public class GridManager : MonoBehaviour
     [SerializeField] private GameObject obstaclePrefab;
     
     [Header("Map Generation")]
-    [SerializeField] private MapGenerationType generationType = MapGenerationType.ConnectedRandom;
+    [SerializeField] private MapGenerationType generationType = MapGenerationType.Maze;
+    
+    [Header("Chunk Loading")]
+    [SerializeField] private bool useChunkLoading = true;
+    [SerializeField] private ChunkLoadingSystem chunkLoadingSystem;
 
     public int[,] GridData { get; private set; }
     public int CurrentWidth { get; private set; }
@@ -29,6 +34,9 @@ public class GridManager : MonoBehaviour
     {
         switch (generationType)
         {
+            case MapGenerationType.Maze:
+                _mapGenerator = new MazeGenerator();
+                break;
             case MapGenerationType.ConnectedRandom:
                 _mapGenerator = new ConnectedMapGenerator();
                 break;
@@ -36,7 +44,7 @@ public class GridManager : MonoBehaviour
                 _mapGenerator = new CellularAutomataGenerator();
                 break;
             default:
-                _mapGenerator = new ConnectedMapGenerator();
+                _mapGenerator = new MazeGenerator();
                 break;
         }
     }
@@ -56,23 +64,30 @@ public class GridManager : MonoBehaviour
         int centerZ = CurrentHeight / 2;
         CenterPosition = new Vector3(centerX, 1f, centerZ);
 
-        int obstacleCount = 0;
-        int cellsProcessed = 0;
-        for (int x = 0; x < CurrentWidth; x++)
+        if (useChunkLoading && chunkLoadingSystem != null)
         {
-            for (int z = 0; z < CurrentHeight; z++)
+            chunkLoadingSystem.Initialize(GridData, CurrentWidth, CurrentHeight, obstaclePrefab, transform);
+        }
+        else
+        {
+            int obstacleCount = 0;
+            int cellsProcessed = 0;
+            for (int x = 0; x < CurrentWidth; x++)
             {
-                if (GridData[x, z] == 1)
+                for (int z = 0; z < CurrentHeight; z++)
                 {
-                    SpawnObstacle(x, z);
-                    obstacleCount++;
-                }
+                    if (GridData[x, z] == 1)
+                    {
+                        SpawnObstacle(x, z);
+                        obstacleCount++;
+                    }
 
-                cellsProcessed++;
-                if (cellsProcessed >= config.cellsPerFrame)
-                {
-                    cellsProcessed = 0;
-                    yield return null;
+                    cellsProcessed++;
+                    if (cellsProcessed >= config.cellsPerFrame)
+                    {
+                        cellsProcessed = 0;
+                        yield return null;
+                    }
                 }
             }
         }
@@ -110,6 +125,7 @@ public class GridManager : MonoBehaviour
 
 public enum MapGenerationType
 {
+    Maze,
     ConnectedRandom,
     CellularAutomata
 }

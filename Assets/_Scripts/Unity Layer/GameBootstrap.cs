@@ -2,18 +2,23 @@ using UnityEngine;
 using Game.Simulation.Server;
 using Game.Simulation.Pathfinding;
 using Game.Core.ServiceLocator;
+using Game.Core.Constants;
+using Game.Presentation.UI;
 using System.Collections;
 
 public class GameBootstrap : MonoBehaviour
 {
-    [Header("Settings")]
+    [Header("Game Settings")]
+    [SerializeField] private float gameDuration = 120f;
     [SerializeField] private int botCount = 20;
     [SerializeField] private int collectibleCount = 10;
+    [SerializeField] private bool autoStartGame = true;
 
     [Header("References")]
     [SerializeField] private GridManager gridManager;
     [SerializeField] private SimulationController simulationController;
     [SerializeField] private PresentationController presentationController;
+    [SerializeField] private GameUIController gameUIController;
 
     private void Start()
     {
@@ -32,6 +37,12 @@ public class GameBootstrap : MonoBehaviour
         InitializeServices();
         InitializeSimulation();
         InitializePresentation();
+        
+        if (autoStartGame)
+        {
+            yield return new WaitForSeconds(1f);
+            StartGame();
+        }
     }
 
     private void InitializeServices()
@@ -62,5 +73,18 @@ public class GameBootstrap : MonoBehaviour
     private void InitializePresentation()
     {
         presentationController.SetSimulation(simulationController.Simulation);
+        
+        if (gameUIController != null)
+        {
+            gameUIController.SetSimulation(simulationController.Simulation);
+        }
+    }
+
+    private void StartGame()
+    {
+        if (simulationController.Simulation != null)
+        {
+            simulationController.Simulation.StartGame(gameDuration);
+        }
     }
 }

@@ -17,5 +17,10 @@ namespace Game.Simulation.Server
         IReadOnlyList<CollectibleEntity> GetCollectibles();
         IReadOnlyList<AgentEntity> GetAgents();
         PlayerEntity GetLocalPlayer();
+        
+        int GetScore(int entityId);
+        float GetTimeRemaining();
+        bool IsGameOver();
+        void StartGame(float duration);
     }
 }

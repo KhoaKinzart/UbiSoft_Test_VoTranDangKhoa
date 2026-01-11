@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace Game.Core.Constants
 {
@@ -30,6 +30,14 @@ namespace Game.Core.Constants
         {
             public const float PICKUP_DISTANCE = 0.6f;  
             public const float WAYPOINT_REACH_DISTANCE = 0.1f;
+        }
+
+        public static class Game
+        {
+            public const float DEFAULT_GAME_DURATION = 120f;
+            public const int DEFAULT_BOT_COUNT = 5;
+            public const int DEFAULT_COLLECTIBLE_COUNT = 10;
+            public const int POINTS_PER_EGG = 1;
         }
     }
 }
