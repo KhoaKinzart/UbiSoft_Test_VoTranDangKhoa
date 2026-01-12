@@ -104,7 +104,18 @@ Solution: Implement Client-Side Prediction. The client should move the player im
 Current State: Bots simply find the shortest path to the nearest available egg.
 
 Solution: Upgrade to Utility AI or Behavior Trees. Bots could be programmed to intercept other players or prioritize eggs that are closer to them relative to competitors, rather than just the absolute closest egg.
+4. Visuals & Assets (Art Polish)
+Current State: The game currently utilizes standard Unity primitives (Cubes, Capsules) and basic materials (programmer art) to focus on the technical implementation of the simulation.
 
+Solution:
+
+3D Models: Replace placeholders with Low Poly or Voxel style character models and environmental props to establish a cohesive art style.
+
+Animations: Implement an Animator Controller with specific states for Idle, Run, Dash, and Interact to make character movement feel more organic and responsive.
+
+VFX: Add Particle Systems for key gameplay events (e.g., confetti explosion upon egg collection, trail renderers for dashing, and dissolve effects for spawning) to improve "Game Juice".
+
+Audio: Integrate a complete Sound Manager with spatial sound effects (SFX) and background music (BGM) to enhance immersion.
 Development Environment
 Unity Version: 2022.3.61f1
 
