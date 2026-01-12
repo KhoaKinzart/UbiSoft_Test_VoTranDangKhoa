@@ -15,7 +15,7 @@ public class PresentationController : MonoBehaviour
     [SerializeField] private Transform dynamicContainer;
 
     [Header("Interpolation")]
-    [SerializeField] private float interpolationDelay = 0.55f; // Delay an toàn để chống giật
+    [SerializeField] private float interpolationDelay = 0.55f; 
     [SerializeField] private float positionSmoothSpeed = 15f;
 
     [Header("Network Simulation")]
@@ -26,16 +26,13 @@ public class PresentationController : MonoBehaviour
     private IGameSimulation _simulation;
     private GameObject _localPlayerObject;
 
-    // Quản lý Object đã spawn
     private Dictionary<int, GameObject> _spawnedBots = new Dictionary<int, GameObject>();
     private Dictionary<int, GameObject> _spawnedCollectibles = new Dictionary<int, GameObject>();
 
-    // Buffer lưu lịch sử dữ liệu để nội suy
     private Dictionary<int, List<EntitySnapshot>> _botHistoryBuffer = new Dictionary<int, List<EntitySnapshot>>();
     private Dictionary<int, Vector3> _botCurrentPositions = new Dictionary<int, Vector3>();
     private List<CollectibleSnapshot> _collectibleHistory = new List<CollectibleSnapshot>();
 
-    // --- OPTIMISTIC LOGIC: Danh sách trứng Client đã tự ăn trước ---
     private HashSet<int> _optimisticCollectedIDs = new HashSet<int>();
 
     private struct CollectibleSnapshot
@@ -52,20 +49,16 @@ public class PresentationController : MonoBehaviour
 
     private void Start()
     {
-        // Bắt đầu vòng lặp giả lập mạng
         StartCoroutine(NetworkUpdateRoutine());
     }
 
-    // --- HÀM MỚI: Được gọi từ ClientCollector khi chạm vào trứng ---
     public void OnOptimisticCollect(int id)
     {
-        // 1. Client tự đánh dấu là đã ăn
         if (!_optimisticCollectedIDs.Contains(id))
         {
             _optimisticCollectedIDs.Add(id);
         }
 
-        // 2. Ẩn Visual ngay lập tức (Instant Feedback)
         if (_spawnedCollectibles.ContainsKey(id))
         {
             Destroy(_spawnedCollectibles[id]);
@@ -84,7 +77,6 @@ public class PresentationController : MonoBehaviour
 
     private void SpawnCollectible(CollectibleEntity collectible)
     {
-        // Nếu trứng này Client đã ăn rồi (đang chờ Server xác nhận) thì đừng Spawn lại
         if (_optimisticCollectedIDs.Contains(collectible.ID)) return;
 
         if (!_spawnedCollectibles.ContainsKey(collectible.ID))
@@ -97,13 +89,11 @@ public class PresentationController : MonoBehaviour
                 collectible.GridPosition.y
             );
 
-            // Thêm Visual Legacy cũ
             if (obj.GetComponent<CollectibleDebugGizmos>() == null)
             {
                 obj.AddComponent<CollectibleDebugGizmos>();
             }
 
-            // --- QUAN TRỌNG: Gắn ID vào object để Player va chạm nhận biết được ---
             var data = obj.GetComponent<CollectibleVisualData>();
             if (data == null) data = obj.AddComponent<CollectibleVisualData>();
             data.ID = collectible.ID;
@@ -121,12 +111,10 @@ public class PresentationController : MonoBehaviour
             return;
         }
         
-        // Không gọi ReceiveSnapshots() ở đây nữa
         UpdateBotVisuals();
         UpdateCollectibleVisuals();
     }
 
-    // Coroutine giả lập server gửi tin ngẫu nhiên
     private IEnumerator NetworkUpdateRoutine()
     {
         while (true)
@@ -153,7 +141,6 @@ public class PresentationController : MonoBehaviour
         float serverTime = Time.time;
         float retentionTime = serverTime - interpolationDelay - 1.0f; 
 
-        // 1. Nhận Bot Snapshots
         var snapshots = _simulation.GetSnapshots();
         foreach (var snap in snapshots)
         {
@@ -169,7 +156,6 @@ public class PresentationController : MonoBehaviour
                 history.RemoveAt(0);
         }
 
-        // 2. Nhận Collectible Snapshots
         var activeIDs = _simulation.GetActiveCollectibleIDs();
         var collectibleSnap = new CollectibleSnapshot
         {
@@ -193,7 +179,6 @@ public class PresentationController : MonoBehaviour
             int entityId = kvp.Key;
             List<EntitySnapshot> history = kvp.Value;
 
-            // --- XỬ LÝ LOCAL PLAYER (ID 999) ---
             if (entityId == 999) 
             {
                 if (_localPlayerObject == null)
@@ -201,11 +186,9 @@ public class PresentationController : MonoBehaviour
 
                 if (_localPlayerObject != null)
                 {
-                    // Tự động gắn script bắt va chạm nếu thiếu
                     if (_localPlayerObject.GetComponent<ClientCollector>() == null)
                         _localPlayerObject.AddComponent<ClientCollector>();
 
-                    // Tự động gắn Gizmos nếu thiếu
                     if (_localPlayerObject.GetComponent<NetworkDebugGizmos>() == null)
                         _localPlayerObject.AddComponent<NetworkDebugGizmos>();
 
@@ -213,11 +196,9 @@ public class PresentationController : MonoBehaviour
                     {
                         var latestSnap = history[history.Count - 1];
                         
-                        // Cập nhật Bóng Đỏ (Server Ghost)
                         var gizmo = _localPlayerObject.GetComponent<NetworkDebugGizmos>();
                         if (gizmo != null) gizmo.UpdateServerPosition(latestSnap.Position);
                         
-                        // UI Stamina/Dash
                         PlayerVisual playerVisual = _localPlayerObject.GetComponent<PlayerVisual>();
                         if (playerVisual != null)
                         {
@@ -232,7 +213,6 @@ public class PresentationController : MonoBehaviour
                     }
                 }
             }
-            // --- XỬ LÝ BOT (REMOTE PLAYERS) ---
             else 
             {
                 if (!_spawnedBots.ContainsKey(entityId))
@@ -243,7 +223,6 @@ public class PresentationController : MonoBehaviour
                     float yOffset = (entityId % 5) * 0.05f;
                     _spawnedBots[entityId].transform.position = new Vector3(0, yOffset, 0);
                     
-                    // Thêm các component Debug
                     _spawnedBots[entityId].AddComponent<Game.Debugging.AgentDebugGizmos>();
                     _spawnedBots[entityId].AddComponent<NetworkDebugGizmos>();
                 }
@@ -251,7 +230,6 @@ public class PresentationController : MonoBehaviour
                 GameObject botObj = _spawnedBots[entityId];
                 BotVisual visual = botObj.GetComponent<BotVisual>();
                 
-                // Cập nhật vị trí Server (Bóng đỏ) cho Bot
                 if (history.Count > 0)
                 {
                     var latestSnap = history[history.Count - 1];
@@ -259,7 +237,6 @@ public class PresentationController : MonoBehaviour
                     if (netGizmo != null) netGizmo.UpdateServerPosition(latestSnap.Position);
                 }
 
-                // Tính toán vị trí nội suy (Smoothing)
                 float baseYOffset = (entityId % 5) * 0.05f;
                 if (GetInterpolatedPosition(history, renderTime, out Vector2 targetPos, out float newStamina))
                 {
@@ -281,7 +258,6 @@ public class PresentationController : MonoBehaviour
                         _botCurrentPositions[entityId] = smoothed;
                     }
 
-                    // Debug Agent Path
                     UpdateAgentDebugGizmos(botObj, entityId, baseYOffset);
 
                     if (visual != null) visual.SetStamina(newStamina);
@@ -316,7 +292,6 @@ public class PresentationController : MonoBehaviour
         float renderTime = Time.time - interpolationDelay;
         HashSet<int> activeIDsAtRenderTime = null;
 
-        // Lấy snapshot phù hợp với renderTime
         for (int i = _collectibleHistory.Count - 1; i >= 0; i--)
         {
             if (_collectibleHistory[i].Timestamp <= renderTime)
@@ -333,19 +308,16 @@ public class PresentationController : MonoBehaviour
 
         var collectibles = _simulation.GetCollectibles();
 
-        // 1. Spawn trứng mới
         foreach (var collectible in collectibles)
         {
             if (activeIDsAtRenderTime.Contains(collectible.ID))
             {
-                // Nếu Client đã ăn rồi thì bỏ qua không Spawn lại
                 if (_optimisticCollectedIDs.Contains(collectible.ID)) continue;
 
                 SpawnCollectible(collectible);
             }
             else
             {
-                // Nếu Server xác nhận trứng đã mất -> Xoá khỏi danh sách lạc quan (Dọn dẹp)
                 if (_optimisticCollectedIDs.Contains(collectible.ID))
                 {
                     _optimisticCollectedIDs.Remove(collectible.ID);
@@ -353,7 +325,6 @@ public class PresentationController : MonoBehaviour
             }
         }
 
-        // 2. Xoá trứng cũ
         List<int> idsToRemove = new List<int>();
         foreach (var id in _spawnedCollectibles.Keys)
         {
@@ -400,7 +371,6 @@ public class PresentationController : MonoBehaviour
                 float dt = last.Timestamp - secondLast.Timestamp;
                 if (dt > 0)
                 {
-                    // Extrapolation: Dự đoán tương lai 0.25s để tránh khựng
                     Vector2 velocity = (last.Position - secondLast.Position) / dt;
                     float extrapolationTime = Mathf.Min(renderTime - last.Timestamp, 0.25f);
                     position = last.Position + velocity * extrapolationTime;

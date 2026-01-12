@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Game.Core.Events;
+using UnityEngine.SceneManagement;
 
 namespace Game.Presentation.UI
 {
@@ -12,10 +13,12 @@ namespace Game.Presentation.UI
         [SerializeField] private TextMeshProUGUI winnerText;
         [SerializeField] private TextMeshProUGUI finalScoreText;
         [SerializeField] private Button restartButton;
+        [SerializeField] private Button mainMenuButton;
 
         [Header("Settings")]
         [SerializeField] private Color winColor = Color.green;
         [SerializeField] private Color loseColor = Color.red;
+        [SerializeField] private string mainMenuSceneName = "StartMenu";
 
         private void OnEnable()
         {
@@ -39,6 +42,11 @@ namespace Game.Presentation.UI
             if (restartButton != null)
             {
                 restartButton.onClick.AddListener(OnRestartClicked);
+            }
+
+            if (mainMenuButton != null)
+            {
+                mainMenuButton.onClick.AddListener(OnMainMenuClicked);
             }
         }
 
@@ -72,9 +80,25 @@ namespace Game.Presentation.UI
 
         private void OnRestartClicked()
         {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(
-                UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
-            );
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+
+        private void OnMainMenuClicked()
+        {
+            SceneManager.LoadScene(mainMenuSceneName);
+        }
+
+        private void OnDestroy()
+        {
+            if (restartButton != null)
+            {
+                restartButton.onClick.RemoveListener(OnRestartClicked);
+            }
+
+            if (mainMenuButton != null)
+            {
+                mainMenuButton.onClick.RemoveListener(OnMainMenuClicked);
+            }
         }
     }
 }

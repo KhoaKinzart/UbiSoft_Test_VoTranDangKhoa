@@ -14,8 +14,10 @@ GameObject:
   - component: {fileID: 6976402779392830193}
   - component: {fileID: 7808210874627176851}
   - component: {fileID: -8242046332317327681}
+  - component: {fileID: 6003034723475575572}
+  - component: {fileID: 5138845522762508022}
   m_Layer: 0
-  m_Name: Player Copy 1
+  m_Name: Player 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -101,7 +103,7 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
@@ -136,3 +138,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4d2debac127bc547b7fd3d271673539, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!54 &6003034723475575572
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3025343556033890361}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &5138845522762508022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3025343556033890361}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 335e4671bfb83e5468d3f0902a4a00c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  staminaSlider: {fileID: 0}
+  fillImage: {fileID: 0}
+  dashCooldownText: {fileID: 0}
+  fullStaminaColor: {r: 0, g: 1, b: 0, a: 1}
+  lowStaminaColor: {r: 1, g: 0, b: 0, a: 1}
+  dashingColor: {r: 0, g: 1, b: 1, a: 1}
+  dashEffectPrefab: {fileID: 9066139960762285046, guid: f8edf57f65ca5ba4e8daf63832116d45, type: 3}
+  dashEffectDuration: 0.5

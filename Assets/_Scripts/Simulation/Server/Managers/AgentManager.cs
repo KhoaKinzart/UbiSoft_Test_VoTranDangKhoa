@@ -165,7 +165,6 @@ namespace Game.Simulation.Server.Managers
 
             var availableCollectibles = _collectibleManager.Collectibles.ToList();
             
-            // Prioritize collectibles that are NOT already targeted by other agents
             var untargetedCollectibles = availableCollectibles.Where(c =>
             {
                 Vector2Int collectiblePos = c.GridPosition;
@@ -185,7 +184,6 @@ namespace Game.Simulation.Server.Managers
                 return agentsTargetingThis == 0;
             }).ToList();
 
-            // If all collectibles are targeted, allow sharing but prefer less crowded ones
             var candidates = untargetedCollectibles.Count > 0 ? untargetedCollectibles : availableCollectibles;
 
             var sorted = candidates.OrderBy(c =>
@@ -193,7 +191,6 @@ namespace Game.Simulation.Server.Managers
                 float distance = Mathf.Abs(agent.GridPosition.x - c.GridPosition.x) +
                                  Mathf.Abs(agent.GridPosition.y - c.GridPosition.y);
                 
-                // Add penalty for crowded collectibles
                 int agentsTargeting = 0;
                 foreach (var otherAgent in _agents)
                 {
@@ -232,11 +229,9 @@ namespace Game.Simulation.Server.Managers
                 int y = Random.Range(1, _gridHeight - 1);
                 Vector2Int candidate = new Vector2Int(x, y);
                 
-                // Check if walkable
                 if (_gridData[x, y] == 1)
                     continue;
                 
-                // Check minimum separation from other agents
                 bool tooClose = false;
                 foreach (var existingAgent in _agents)
                 {
@@ -252,7 +247,6 @@ namespace Game.Simulation.Server.Managers
                     return candidate;
             }
             
-            // Fallback: just find any walkable position
             for (int attempt = 0; attempt < maxTries; attempt++)
             {
                 int x = Random.Range(1, _gridWidth - 1);

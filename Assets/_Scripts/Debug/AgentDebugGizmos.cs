@@ -37,7 +37,7 @@ namespace Game.Debugging
 
         private void OnGUI()
         {
-            if (!showAgentID) return;
+            if (!showAgentID || Camera.main == null) return;
 
             Vector3 screenPos = Camera.main.WorldToScreenPoint(transform.position + Vector3.up * 0.5f);
             

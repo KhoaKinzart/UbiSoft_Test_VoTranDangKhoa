@@ -4,6 +4,7 @@ using Game.Simulation.Pathfinding;
 using Game.Core.ServiceLocator;
 using Game.Core.Constants;
 using Game.Presentation.UI;
+using Game.Core;
 using System.Collections;
 
 public class GameBootstrap : MonoBehaviour
@@ -11,8 +12,10 @@ public class GameBootstrap : MonoBehaviour
     [Header("Game Settings")]
     [SerializeField] private float gameDuration = 120f;
     [SerializeField] private int botCount = 20;
-    [SerializeField] private int collectibleCount = 10;
     [SerializeField] private bool autoStartGame = true;
+    [SerializeField] private bool useMenuSettings = true;
+    
+    private int CollectibleCount => (botCount + 1) * 2;
 
     [Header("References")]
     [SerializeField] private GridManager gridManager;
@@ -22,7 +25,17 @@ public class GameBootstrap : MonoBehaviour
 
     private void Start()
     {
+        LoadSettingsFromMenu();
         StartCoroutine(InitializeGame());
+    }
+    
+    private void LoadSettingsFromMenu()
+    {
+        if (useMenuSettings && GameSettings.Instance != null)
+        {
+            botCount = GameSettings.Instance.BotCount;
+            gameDuration = GameSettings.Instance.GameDuration;
+        }
     }
 
     private IEnumerator InitializeGame()
@@ -66,7 +79,10 @@ public class GameBootstrap : MonoBehaviour
             pathfinding
         );
 
-        simulation.Initialize(botCount, collectibleCount);
+        int totalPlayers = botCount + 1;
+        int totalEggs = CollectibleCount;
+        
+        simulation.Initialize(botCount, CollectibleCount);
         simulationController.SetSimulation(simulation);
     }
 

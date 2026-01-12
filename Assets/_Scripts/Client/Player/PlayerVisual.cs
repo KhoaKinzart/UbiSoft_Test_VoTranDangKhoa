@@ -5,10 +5,9 @@ using TMPro;
 public class PlayerVisual : MonoBehaviour
 {
     [Header("Stamina UI")]
-    [SerializeField] private Slider staminaSlider;
-    [SerializeField] private Image fillImage;
-    [SerializeField] private TextMeshProUGUI dashCooldownText;
-    
+    public Slider staminaSlider; 
+    public Image fillImage;
+    public TextMeshProUGUI dashCooldownText;
     [Header("Colors")]
     [SerializeField] private Color fullStaminaColor = Color.green;
     [SerializeField] private Color lowStaminaColor = Color.red;

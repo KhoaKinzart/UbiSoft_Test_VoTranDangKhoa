@@ -17,7 +17,6 @@ namespace Client.Utils
 
             if (history.Count == 0) return false;
 
-            // Case 1: Dữ liệu mới nhất (chưa cần nội suy)
             if (history[0].Timestamp > renderTime)
             {
                 resultPos = history[0].Position;
@@ -25,7 +24,6 @@ namespace Client.Utils
                 return true;
             }
 
-            // Case 2: Tìm 2 snapshot để lerp
             BotSnapshot snapA = history[0];
             BotSnapshot snapB = history[0];
 
@@ -39,10 +37,9 @@ namespace Client.Utils
                 }
             }
 
-            // Case 3: Xử lý Lerp
             if (Vector2.Distance(snapA.Position, snapB.Position) > 10.0f)
             {
-                resultPos = snapB.Position; // Teleport nếu quá xa
+                resultPos = snapB.Position; 
                 resultStamina = snapB.Stamina;
             }
             else
