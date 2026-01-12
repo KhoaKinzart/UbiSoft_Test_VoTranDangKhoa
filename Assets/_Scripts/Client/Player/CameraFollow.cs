@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class CameraFollow : MonoBehaviour
 {
@@ -11,7 +11,6 @@ public class CameraFollow : MonoBehaviour
 
     private void Start()
     {
-        // Ensure camera is perspective
         Camera cam = GetComponent<Camera>();
         if (cam != null && cam.orthographic)
         {
@@ -29,9 +28,8 @@ public class CameraFollow : MonoBehaviour
 
         transform.position = smoothedPosition;
         
-        // Look at player with fixed angle
         Vector3 lookAtPos = target.position;
-        lookAtPos.y = target.position.y + 1f; // Look slightly above player
+        lookAtPos.y = target.position.y + 1f;
         transform.LookAt(lookAtPos);
     }
 
@@ -41,7 +39,6 @@ public class CameraFollow : MonoBehaviour
         
         if (target != null)
         {
-            // Set initial position immediately
             transform.position = target.position + offset;
             
             Vector3 lookAtPos = target.position;

@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using UnityEditor;
 
 public class StaminaUISetup : MonoBehaviour
 {
@@ -103,13 +102,12 @@ public class StaminaUISetup : MonoBehaviour
 
     private void ConnectToPlayerVisual(PlayerVisual playerVisual, Image fillImage)
     {
-        var serializedObject = new UnityEditor.SerializedObject(playerVisual);
-        
-        serializedObject.FindProperty("staminaSlider").objectReferenceValue = _staminaSlider;
-        serializedObject.FindProperty("fillImage").objectReferenceValue = fillImage;
-        serializedObject.FindProperty("dashCooldownText").objectReferenceValue = _dashText;
-        
-        serializedObject.ApplyModifiedProperties();
+        if (playerVisual != null)
+        {
+            playerVisual.staminaSlider = _staminaSlider;
+            playerVisual.fillImage = fillImage;
+            playerVisual.dashCooldownText = _dashText;
+        }
     }
 
     public Slider GetStaminaSlider()

@@ -1,9 +1,16 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class BotVisual : MonoBehaviour
 {
-    [SerializeField] private Slider staminaSlider; 
+    [SerializeField] private Slider staminaSlider;
+    
+    private Camera mainCamera;
+
+    private void Start()
+    {
+        mainCamera = Camera.main;
+    }
 
     public void SetStamina(float value)
     {
@@ -15,9 +22,9 @@ public class BotVisual : MonoBehaviour
 
     void LateUpdate()
     {
-        if (staminaSlider != null)
+        if (staminaSlider != null && mainCamera != null)
         {
-            staminaSlider.transform.parent.rotation = Camera.main.transform.rotation;
+            staminaSlider.transform.parent.rotation = mainCamera.transform.rotation;
         }
     }
 }

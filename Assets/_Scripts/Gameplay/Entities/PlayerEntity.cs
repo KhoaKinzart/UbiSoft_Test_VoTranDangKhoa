@@ -140,8 +140,7 @@ namespace Game.Gameplay.Entities
 
         private bool CanMoveTo(Vector2 targetPos, int[,] gridData, int gridWidth, int gridHeight)
         {
-            // USE SAME RADIUS AS CLIENT!
-            const float PLAYER_RADIUS = 0.3f;  // Changed from 0.4f
+            const float PLAYER_RADIUS = 0.3f;
 
             if (!IsPositionWalkable(targetPos, gridData, gridWidth, gridHeight))
                 return false;

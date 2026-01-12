@@ -111,7 +111,6 @@ namespace Game.Simulation.Movement
             float moveDistance = speed * deltaTime;
             float distToTarget = Vector2.Distance(agent.Position, targetPos);
 
-            // Clamp movement to prevent overshooting
             if (moveDistance > distToTarget)
             {
                 agent.Position = targetPos;

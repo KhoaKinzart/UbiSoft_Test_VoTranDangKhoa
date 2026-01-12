@@ -85,32 +85,26 @@ public class PlayerInput : MonoBehaviour
         Vector3 serverPos = new Vector3(_serverPosition.x, 0.5f, _serverPosition.y);
         float desyncDistance = Vector2.Distance(new Vector2(clientPos.x, clientPos.z), _serverPosition);
 
-        // Client position (green)
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(clientPos, 0.5f);
         Gizmos.DrawLine(clientPos, clientPos + Vector3.up * 2f);
 
-        // Server position (red) - AUTHORITATIVE for pickup
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(serverPos, 0.6f);
         Gizmos.DrawLine(serverPos, serverPos + Vector3.up * 3f);
 
-        // Server PICKUP RANGE (red transparent sphere)
         Gizmos.color = new Color(1, 0, 0, 0.2f);
-        Gizmos.DrawSphere(serverPos, 0.6f); // PICKUP_DISTANCE = 0.6m
+        Gizmos.DrawSphere(serverPos, 0.6f);
 
         Gizmos.color = new Color(1, 0, 0, 0.5f);
         Gizmos.DrawWireSphere(serverPos, 0.6f);
 
-        // Server collision radius (smaller)
         Gizmos.color = new Color(1, 0.5f, 0, 0.3f);
-        Gizmos.DrawWireSphere(serverPos, 0.3f); // PLAYER_RADIUS
+        Gizmos.DrawWireSphere(serverPos, 0.3f);
 
-        // Distance line
         Gizmos.color = desyncDistance > 0.3f ? Color.red : Color.yellow;
         Gizmos.DrawLine(clientPos, serverPos);
 
-        // Find nearest collectible and check if in range
         GameObject[] collectibles = GameObject.FindGameObjectsWithTag("Collectible");
         if (collectibles.Length > 0)
         {
@@ -136,7 +130,6 @@ public class PlayerInput : MonoBehaviour
 
                 if (inRange)
                 {
-                    // Highlight when in pickup range
                     Gizmos.color = new Color(0, 1, 0, 0.5f);
                     Gizmos.DrawLine(clientPos, nearest.transform.position);
                 }

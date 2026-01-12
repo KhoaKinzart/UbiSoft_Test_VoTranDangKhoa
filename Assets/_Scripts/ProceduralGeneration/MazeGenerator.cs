@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Game.ProceduralGeneration
@@ -6,7 +6,7 @@ namespace Game.ProceduralGeneration
     public class MazeGenerator : IMapGenerator
     {
         private const int MAX_REGENERATION_ATTEMPTS = 3;
-        private const int SAFE_ZONE_SIZE = 3; // Kích thước vùng an toàn (3x3)
+        private const int SAFE_ZONE_SIZE = 3;
 
         public int[,] Generate(int width, int height, float obstacleDensity)
         {
@@ -15,10 +15,8 @@ namespace Game.ProceduralGeneration
 
             while (attempts < MAX_REGENERATION_ATTEMPTS)
             {
-                // Bước 1, 2, 3: Tạo mê cung và bào mòn
                 grid = GenerateErodedMaze(width, height, obstacleDensity);
 
-                // Bước 4: Kiểm tra tính liên thông
                 if (ValidateConnectivity(grid, width, height))
                 {
                     return grid;
@@ -31,7 +29,6 @@ namespace Game.ProceduralGeneration
 
         private int[,] GenerateErodedMaze(int width, int height, float targetDensity)
         {
-            // 1. Khởi tạo full tường
             int[,] grid = new int[width, height];
             for (int x = 0; x < width; x++)
             {
@@ -41,16 +38,12 @@ namespace Game.ProceduralGeneration
                 }
             }
 
-            // 2. Đào mê cung (Recursive Backtracker)
             CarveMazePath(grid, width, height);
 
-            // 3. Bào mòn tường (Erosion) - giúp map thoáng hơn
             ErodeWalls(grid, width, height, targetDensity);
 
-            // 4. Tạo vùng an toàn tuyệt đối ở giữa (tránh player bị kẹt khi spawn)
             CreateSafeZone(grid, width, height);
 
-            // 5. Đóng khung viền
             EnsureBoundaries(grid, width, height);
 
             return grid;
@@ -68,7 +61,7 @@ namespace Game.ProceduralGeneration
                 {
                     if (x > 0 && x < width - 1 && z > 0 && z < height - 1)
                     {
-                        grid[x, z] = 0; // 0 = Ground
+                        grid[x, z] = 0;
                     }
                 }
             }
@@ -84,7 +77,6 @@ namespace Game.ProceduralGeneration
             Stack<Vector2Int> stack = new Stack<Vector2Int>();
             bool[,] visited = new bool[mazeWidth, mazeHeight];
 
-            // Bắt đầu từ giữa
             Vector2Int start = new Vector2Int(mazeWidth / 2, mazeHeight / 2);
             stack.Push(start);
             visited[start.x, start.y] = true;
@@ -139,7 +131,6 @@ namespace Game.ProceduralGeneration
             {
                 for (int z = 1; z < height - 1; z++)
                 {
-                    // Nếu là tường, có xác suất bị xóa dựa trên density
                     if (grid[x, z] == 1 && Random.value > density)
                     {
                         grid[x, z] = 0;
@@ -167,10 +158,8 @@ namespace Game.ProceduralGeneration
             int walkableCount = CountWalkableCells(grid, width, height);
             if (walkableCount == 0) return false;
 
-            // Start từ tâm map (nơi chắc chắn đã xóa tường nhờ CreateSafeZone)
             Vector2Int startPos = new Vector2Int(width / 2, height / 2);
 
-            // Fallback nếu tâm map vẫn lỗi (rất hiếm)
             if (grid[startPos.x, startPos.y] == 1)
                 startPos = FindFirstWalkableCell(grid, width, height);
 
@@ -179,8 +168,6 @@ namespace Game.ProceduralGeneration
             int reachableCount = FloodFillCount(grid, width, height, startPos);
             return reachableCount == walkableCount;
         }
-
-        // --- Utility Functions ---
 
         private int CountWalkableCells(int[,] grid, int width, int height)
         {
@@ -230,7 +217,6 @@ namespace Game.ProceduralGeneration
                     int nx = current.x + dx[i];
                     int ny = current.y + dy[i];
 
-                    // --- SỬA LỖI Ở DÒNG DƯỚI NÀY (Thay nz bằng ny) ---
                     if (nx >= 0 && nx < width && ny >= 0 && ny < height && !visited[nx, ny] && grid[nx, ny] == 0)
                     {
                         visited[nx, ny] = true;
